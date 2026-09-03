@@ -8,6 +8,7 @@ const PRECACHE_ASSETS = [
     "./index.js",
     "./icons.js",
     "./manifest.webmanifest",
+    "https://raw.githubusercontent.com/s-pro-v/img/refs/heads/main/G%20img/ico.png",
     "https://cdn.jsdelivr.net/npm/chart.js",
     "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css",
     "https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap",

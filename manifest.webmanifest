@@ -11,13 +11,7 @@
   "icons": [
     {
       "src": "https://raw.githubusercontent.com/s-pro-v/img/refs/heads/main/G%20img/ico.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "https://raw.githubusercontent.com/s-pro-v/img/refs/heads/main/G%20img/ico.png",
-      "sizes": "512x512",
+      "sizes": "192x192 512x512",
       "type": "image/png",
       "purpose": "any maskable"
     }
