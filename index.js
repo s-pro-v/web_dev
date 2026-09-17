@@ -29,11 +29,11 @@
     }
 
     alertEl.innerHTML = `
-        <div class="oxy-alert-icon"><i class="fas ${icon}"></i></div>
-        <div class="oxy-alert-content">
-            <div class="oxy-alert-title">${title || defaultTitle}</div>
-            <div class="oxy-alert-msg">${message}</div>
-        </div>
+      <div class="oxy-alert-icon"><i class="fas ${icon}"></i></div>
+      <div class="oxy-alert-content">
+        <div class="oxy-alert-title">${title || defaultTitle}</div>
+        <div class="oxy-alert-msg">${message}</div>
+      </div>
     `;
 
     container.appendChild(alertEl);
@@ -54,32 +54,29 @@
     if (!overlay) {
       overlay = document.createElement("div");
       overlay.id = "oxy-confirm-overlay";
-      // Wykorzystujemy klasy z ekranu logowania dla pełnoekranowego zaciemnienia
       overlay.className = "login-overlay hidden";
       overlay.style.zIndex = "9999999";
       overlay.innerHTML = `
-          <div class="login-box card" style="max-width: 380px; text-align: center; border-top: 4px solid var(--warning-color);">
-              <div style="font-size: 40px; color: var(--warning-color); margin-bottom: 1rem;"><i class="fas fa-exclamation-triangle"></i></div>
-              <h2 class="card-title" style="margin-bottom: 1rem;">WYMAGANE POTWIERDZENIE</h2>
-              <p id="oxy-confirm-msg" style="margin-bottom: 1.5rem; color: var(--text-muted); font-size: 14px; line-height: 1.4;"></p>
-              <div style="display: flex; gap: 10px;">
-                  <button id="oxy-confirm-no" class="btn" style="flex: 1; justify-content: center; height: 40px;">ANULUJ</button>
-                  <button id="oxy-confirm-yes" class="btn active" style="flex: 1; justify-content: center; height: 40px; background: var(--danger-color) !important; border-color: var(--danger-color) !important; color: #fff;">TAK, WYKONAJ</button>
-              </div>
+        <div class="login-box card" style="max-width: 380px; text-align: center; border-top: 4px solid var(--warning-color);">
+          <div style="font-size: 40px; color: var(--warning-color); margin-bottom: 1rem;"><i class="fas fa-exclamation-triangle"></i></div>
+          <h2 class="card-title" style="margin-bottom: 1rem;">WYMAGANE POTWIERDZENIE</h2>
+          <p id="oxy-confirm-msg" style="margin-bottom: 1.5rem; color: var(--text-muted); font-size: 14px; line-height: 1.4;"></p>
+          <div style="display: flex; gap: 10px;">
+            <button id="oxy-confirm-no" class="btn" style="flex: 1; justify-content: center; height: 40px;">ANULUJ</button>
+            <button id="oxy-confirm-yes" class="btn active" style="flex: 1; justify-content: center; height: 40px; background: var(--danger-color) !important; border-color: var(--danger-color) !important; color: #fff;">TAK, WYKONAJ</button>
           </div>
+        </div>
       `;
       document.body.appendChild(overlay);
     }
 
     document.getElementById("oxy-confirm-msg").textContent = message;
 
-    // Wymuszenie reflow i pokazanie okna
     setTimeout(() => overlay.classList.remove("hidden"), 10);
 
     const btnYes = document.getElementById("oxy-confirm-yes");
     const btnNo = document.getElementById("oxy-confirm-no");
 
-    // Klonowanie zapobiega kumulowaniu się eventów przy wielokrotnym wywołaniu
     const newBtnYes = btnYes.cloneNode(true);
     const newBtnNo = btnNo.cloneNode(true);
     btnYes.parentNode.replaceChild(newBtnYes, btnYes);
@@ -288,7 +285,7 @@
       const isActive = idx === appState.activeMonthIdx;
 
       html += `<button class="month-tab-btn${isActive ? " active" : ""}" data-idx="${idx}">
-                  ${monthName}
+                 ${monthName}
                </button>`;
     });
     html += `</div>`;
@@ -528,11 +525,11 @@
       }
 
       gridHtml += `
-            <div class="${cellClass}">
-                <div class="cal-day-num">${dayNum}</div>
-                ${shiftHtml}
-            </div>
-        `;
+        <div class="${cellClass}">
+          <div class="cal-day-num">${dayNum}</div>
+          ${shiftHtml}
+        </div>
+      `;
     });
 
     const totalCells = firstDayOffset + daysArr.length;
@@ -544,41 +541,40 @@
     gridHtml += `</div>`;
 
     const statsHtml = `
-        <div class="cal-stats">
-            <div class="cal-stat-box cal-align-center hours-stat">
-                <span>Godziny</span> 
-                <strong>${totalHours}h</strong>
-            </div>
-            <div class="cal-stat-box cal-align-center shifts-stat">
-                <span>S. Zmian</span> 
-                <strong>${dCount + nCount + otherCount}</strong>
-            </div>
-            <div class="cal-stat-box cal-align-center free-stat">
-                <span>Wolne</span> 
-                <strong class="cal-success">${freeDays}</strong>
-            </div>
-            <div class="cal-stat-box cal-align-center day-stat">
-                <span>Dniówki</span> 
-                <strong class="cal-day">${dCount}</strong>
-            </div>
-            <div class="cal-stat-box cal-align-center night-stat">
-                <span>Nocki</span> 
-                <strong class="cal-night">${nCount}</strong>
-            </div>
-            <div class="cal-stat-box cal-align-center weekend-stat">
-                <span>Weekendy</span> 
-                <strong class="cal-warning">${weekendShifts}</strong>
-            </div>
-            ${otherCount > 0
+      <div class="cal-stats">
+        <div class="cal-stat-box cal-align-center hours-stat">
+          <span>Godziny</span> 
+          <strong>${totalHours}h</strong>
+        </div>
+        <div class="cal-stat-box cal-align-center shifts-stat">
+          <span>S. Zmian</span> 
+          <strong>${dCount + nCount + otherCount}</strong>
+        </div>
+        <div class="cal-stat-box cal-align-center free-stat">
+          <span>Wolne</span> 
+          <strong class="cal-success">${freeDays}</strong>
+        </div>
+        <div class="cal-stat-box cal-align-center day-stat">
+          <span>Dniówki</span> 
+          <strong class="cal-day">${dCount}</strong>
+        </div>
+        <div class="cal-stat-box cal-align-center night-stat">
+          <span>Nocki</span> 
+          <strong class="cal-night">${nCount}</strong>
+        </div>
+        <div class="cal-stat-box cal-align-center weekend-stat">
+          <span>Weekendy</span> 
+          <strong class="cal-warning">${weekendShifts}</strong>
+        </div>
+        ${otherCount > 0
         ? `
-            <div class="cal-stat-box cal-align-center cal-other-row">
-                <span>Inne Wpisy (np. Urlop, L4)</span> 
-                <strong class="cal-other">${otherCount}</strong>
-            </div>`
+          <div class="cal-stat-box cal-align-center cal-other-row">
+            <span>Inne Wpisy (np. Urlop, L4)</span> 
+            <strong class="cal-other">${otherCount}</strong>
+          </div>`
         : ""
       }
-        </div>
-   
+      </div>
     `;
 
     document.getElementById("worker-cal-body").innerHTML = statsHtml + gridHtml;
@@ -615,7 +611,7 @@
     });
   }
 
-  function openShiftListModal() {
+  function openShiftListModal(eOrIdx) {
     const modal = document.getElementById("shift-modal-overlay");
     const body = document.getElementById("shift-modal-body");
     const title = document.getElementById("shift-modal-title");
@@ -629,13 +625,60 @@
     const todayStr = String(new Date().getDate());
     const todayIdx = daysArr.indexOf(todayStr);
 
-    if (todayIdx === -1) {
-      body.innerHTML = `<div class="shift-modal-empty">Dzisiejszy dzień (${todayStr}) nie znajduje się w grafiku dla ${currentData.meta.month || "wybranego miesiąca"}.</div>`;
+    let targetIdx = typeof eOrIdx === "number" ? eOrIdx : todayIdx;
+
+    if (targetIdx === -1 || targetIdx >= daysArr.length) {
+      targetIdx = 0;
+    }
+
+    if (daysArr.length === 0) {
+      body.innerHTML = `<div class="shift-modal-empty">Brak dni w wybranym miesiącu.</div>`;
       modal.classList.add("active");
       return;
     }
 
-    title.innerHTML = `<i class="fas fa-users"></i> Osoby w pracy: Dziś, ${daysArr[todayIdx]} ${weekdaysArr[todayIdx] || ""}`;
+    let selectorHtml = `
+      <div class="modal-day-controls">
+        <button id="modal-prev-day" class="btn modal-nav-btn" title="Poprzedni dzień"><i class="fas fa-chevron-left"></i></button>
+        <select id="modal-day-selector" class="shift-input modal-day-select">`;
+    daysArr.forEach((d, i) => {
+      const wd = weekdaysArr[i] || "";
+      const isSelected = i === targetIdx ? "selected" : "";
+      selectorHtml += `<option value="${i}" ${isSelected}>Dzień ${d} (${wd})</option>`;
+    });
+    selectorHtml += `</select>
+        <button id="modal-next-day" class="btn modal-nav-btn" title="Następny dzień"><i class="fas fa-chevron-right"></i></button>
+      </div>`;
+
+    title.innerHTML = `<i class="fas fa-users" style="color: var(--highlight-color); margin-right: 8px;"></i> Obsada: ${selectorHtml}`;
+
+    setTimeout(() => {
+      const selector = document.getElementById("modal-day-selector");
+      const btnPrev = document.getElementById("modal-prev-day");
+      const btnNext = document.getElementById("modal-next-day");
+
+      if (selector) {
+        selector.addEventListener("change", (e) => {
+          openShiftListModal(parseInt(e.target.value));
+        });
+      }
+
+      if (btnPrev) {
+        btnPrev.addEventListener("click", () => {
+          let newIdx = targetIdx - 1;
+          if (newIdx < 0) newIdx = daysArr.length - 1;
+          openShiftListModal(newIdx);
+        });
+      }
+
+      if (btnNext) {
+        btnNext.addEventListener("click", () => {
+          let newIdx = targetIdx + 1;
+          if (newIdx >= daysArr.length) newIdx = 0;
+          openShiftListModal(newIdx);
+        });
+      }
+    }, 0);
 
     const dayWorkers = [];
     const nightWorkers = [];
@@ -643,7 +686,7 @@
       document.documentElement.getAttribute("theme") || "dark";
 
     currentData.workers.forEach((w) => {
-      const val = getDisplayShiftCode(w.shifts[todayIdx]);
+      const val = getDisplayShiftCode(w.shifts[targetIdx]);
 
       if (val !== "") {
         const grpCode = getWorkerGroupCode(w);
@@ -1095,6 +1138,69 @@
       }
     }
 
+    const lastUpdateEl = document.getElementById("last-update-time");
+    if (lastUpdateEl) {
+      if (currentData.meta && currentData.meta.generated) {
+        try {
+          const d = new Date(currentData.meta.generated);
+          const formatted = d.toLocaleString("pl-PL", {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+          });
+          lastUpdateEl.innerHTML = `<i class="fas fa-clock" style="margin-right: 5px;"></i> ${formatted}`;
+        } catch (e) {
+          lastUpdateEl.innerHTML = `<i class="fas fa-clock" style="margin-right: 5px;"></i> Nieznana data`;
+        }
+      } else {
+        lastUpdateEl.innerHTML = `<i class="fas fa-clock" style="margin-right: 5px;"></i> Brak danych`;
+      }
+    }
+
+    const systemInfoList = document.getElementById("system-info-list");
+    if (systemInfoList) {
+      systemInfoList.innerHTML = `
+        <div class="transaction-item">
+          <div class="transaction-left">
+            <div class="transaction-icon icon-purple">
+              <i class="fas fa-users"></i>
+            </div>
+            <div>
+              <p class="transaction-title">Liczba Pracowników</p>
+              <p class="transaction-date">W tym grafiku</p>
+            </div>
+          </div>
+          <p class="transaction-amount amount-green" style="font-size:16px;">${currentData.workers.length}</p>
+        </div>
+        <div class="transaction-item">
+          <div class="transaction-left">
+            <div class="transaction-icon icon-green-alt">
+              <i class="fas fa-calendar-alt"></i>
+            </div>
+            <div>
+              <p class="transaction-title">Aktywny Miesiąc</p>
+              <p class="transaction-date">${daysArr.length} dni</p>
+            </div>
+          </div>
+          <p class="transaction-amount" style="color:var(--text-color); font-size:14px;">${currentData.meta.month || "Brak"}</p>
+        </div>
+        <div class="transaction-item">
+          <div class="transaction-left">
+            <div class="transaction-icon" style="background: rgba(243, 108, 0, 0.15); color: #f36c00;">
+              <i class="fas fa-clock"></i>
+            </div>
+            <div>
+              <p class="transaction-title">Łącznie Zaplanowano</p>
+              <p class="transaction-date">Godziny całego zespołu</p>
+            </div>
+          </div>
+          <p class="transaction-amount amount-green" style="font-size:14px;">${totalHours}h</p>
+        </div>
+      `;
+    }
+
     if (charts.main) {
       const workerNames = [];
       const workerHours = [];
@@ -1171,6 +1277,11 @@
         appState.activeMonthIdx = findCurrentMonthIndex();
         renderSchedule();
 
+        // Automatyczna synchronizacja kont po wczytaniu nowych danych z chmury
+        if (typeof window.syncUsersFromSchedule === "function") {
+          window.syncUsersFromSchedule(true);
+        }
+
         if (iconDest && typeof AppIcons !== "undefined") {
           iconDest.innerHTML = AppIcons.circleCheck || "";
           setTimeout(() => {
@@ -1235,7 +1346,7 @@
     if (!localStorage.getItem(USERS_KEY)) {
       localStorage.setItem(
         USERS_KEY,
-        JSON.stringify([{ user: "admin", pass: "admin123" }]),
+        JSON.stringify([{ user: "admin", pass: "admin123", role: "admin" }]),
       );
     }
 
@@ -1246,6 +1357,7 @@
     const passInput = document.getElementById("login-password");
     const errorMsg = document.getElementById("login-error");
     const btnOpenUsers = document.getElementById("btn-users");
+    const btnSyncUsers = document.getElementById("btn-sync-users");
 
     function applyUserPermissions(loggedUser) {
       if (btnOpenUsers) {
@@ -1269,7 +1381,7 @@
       const passVal = passInput.value;
 
       const validUser = users.find(
-        (u) => u.user === userVal && u.pass === passVal,
+        (u) => u.user.toLowerCase() === userVal.toLowerCase() && u.pass === passVal,
       );
 
       if (validUser) {
@@ -1307,7 +1419,6 @@
         if (e.key === "Enter") passInput.focus();
       });
 
-    // NOWE: Potwierdzenie przy wylogowywaniu
     const btnLogout = document.getElementById("btn-logout");
     if (btnLogout) {
       btnLogout.addEventListener("click", () => {
@@ -1323,6 +1434,56 @@
     const listEl = document.getElementById("users-list");
     const btnAdd = document.getElementById("btn-add-user");
 
+    // Generowanie i synchronizacja kont z bazy pracowników w grafiku
+    function syncUsersFromSchedule(silent = false) {
+      const users = JSON.parse(localStorage.getItem(USERS_KEY) || "[]");
+      let addedCount = 0;
+
+      appState.allMonths.forEach((m) => {
+        if (!m.workers || !Array.isArray(m.workers)) return;
+
+        m.workers.forEach((w) => {
+          if (!w.name || w.name.trim() === "" || w.name === "Przykład") return;
+
+          const username = w.name.trim().replace(/\s+/g, "_");
+          const exists = users.some(
+            (u) => u.user.toLowerCase() === username.toLowerCase(),
+          );
+
+          if (!exists) {
+            const firstName = w.name.trim().split(" ")[0];
+            const defaultPass = `${firstName}123`;
+
+            users.push({
+              user: username,
+              pass: defaultPass,
+              workerId: w.id || null,
+              role: "worker",
+            });
+            addedCount++;
+          }
+        });
+      });
+
+      if (addedCount > 0) {
+        localStorage.setItem(USERS_KEY, JSON.stringify(users));
+        renderUsers();
+        if (!silent) {
+          oxyAlert(
+            `Utworzono ${addedCount} nowych kont pracowników. Domyślne hasło to: [Imię]123`,
+            "success",
+            "SYNCHRONIZACJA KONT",
+          );
+        }
+      } else if (!silent) {
+        oxyAlert(
+          "Wszyscy pracownicy z grafiku posiadają już utworzone konta.",
+          "info",
+          "SYNCHRONIZACJA",
+        );
+      }
+    }
+
     function renderUsers() {
       if (!listEl) return;
       const users = JSON.parse(localStorage.getItem(USERS_KEY) || "[]");
@@ -1330,22 +1491,31 @@
       users.forEach((u, idx) => {
         const row = document.createElement("div");
         row.style.cssText =
-          "display: flex; justify-content: space-between; align-items: center; padding: 10px; background: var(--card-bg); border: 1px solid var(--border-color);";
+          "display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: var(--card-bg); border: 1px solid var(--border-color);";
 
         const deleteBtnHtml =
           u.user === "admin"
-            ? `<span style="font-size: 10px; color: var(--text-muted);">Główny Admin</span>`
-            : `<button class="icon-btn delete-user-btn" data-idx="${idx}" style="width: 30px; height: 30px; border-color: transparent;"><i class="fas fa-trash" style="color: var(--danger-color); pointer-events: none;"></i></button>`;
+            ? `<span style="font-size: 10px; color: var(--text-muted); font-weight: bold;">GŁÓWNY ADMIN</span>`
+            : `<div style="display:flex; align-items:center; gap:8px;">
+                 <span style="font-size: 11px; color: var(--text-muted); font-family: monospace;">hasło: ${u.pass}</span>
+                 <button class="icon-btn delete-user-btn" data-idx="${idx}" style="width: 28px; height: 28px; border-color: transparent;"><i class="fas fa-trash" style="color: var(--danger-color); pointer-events: none;"></i></button>
+               </div>`;
 
         row.innerHTML = `
-                <span style="font-weight: 600;"><i class="fas fa-user" style="color: var(--text-muted); margin-right: 8px;"></i> ${u.user}</span>
-                ${deleteBtnHtml}
-            `;
+          <div style="display:flex; align-items:center; gap:8px;">
+            <i class="fas ${u.user === "admin" ? "fa-shield-halved" : "fa-user"}" style="color: ${u.user === "admin" ? "var(--highlight-color)" : "var(--text-muted)"};"></i>
+            <span style="font-weight: 600; font-size: 13px;">${u.user}</span>
+          </div>
+          ${deleteBtnHtml}
+        `;
         listEl.appendChild(row);
       });
     }
 
-    // NOWE: Potwierdzenie przy usuwaniu konta
+    if (btnSyncUsers) {
+      btnSyncUsers.addEventListener("click", () => syncUsersFromSchedule(false));
+    }
+
     if (listEl) {
       listEl.addEventListener("click", (e) => {
         const btn = e.target.closest(".delete-user-btn");
@@ -1363,13 +1533,13 @@
           }
 
           oxyConfirm(
-            `Czy na pewno chcesz bezpowrotnie usunąć konto użytkownika "${users[idx].user}"?`,
+            `Czy na pewno chcesz bezpowrotnie usunąć konto "${users[idx].user}"?`,
             () => {
               users.splice(idx, 1);
               localStorage.setItem(USERS_KEY, JSON.stringify(users));
               renderUsers();
               oxyAlert(
-                "Konto użytkownika zostało pomyślnie usunięte.",
+                "Konto użytkownika zostało usunięte.",
                 "info",
                 "USUNIĘTO",
               );
@@ -1383,7 +1553,7 @@
       btnAdd.addEventListener("click", () => {
         const uInp = document.getElementById("new-username");
         const pInp = document.getElementById("new-password");
-        const uVal = uInp.value.trim();
+        const uVal = uInp.value.trim().replace(/\s+/g, "_");
         const pVal = pInp.value.trim();
 
         if (!uVal || !pVal) {
@@ -1405,7 +1575,7 @@
           return;
         }
 
-        users.push({ user: uVal, pass: pVal });
+        users.push({ user: uVal, pass: pVal, role: "custom" });
         localStorage.setItem(USERS_KEY, JSON.stringify(users));
         uInp.value = "";
         pInp.value = "";
@@ -1434,6 +1604,75 @@
       modalUsers.addEventListener("click", (e) => {
         if (e.target === modalUsers) modalUsers.classList.remove("active");
       });
+
+    window.syncUsersFromSchedule = syncUsersFromSchedule;
+  }
+
+  // ==========================================
+  // 6. PWA SERVICE WORKER, OFFLINE & INSTALL
+  // ==========================================
+  function initPWA() {
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker
+          .register("./sw.js")
+          .then((reg) => {
+            console.log("[PWA] Service Worker zarejestrowany. Zakres:", reg.scope);
+          })
+          .catch((err) => {
+            console.error("[PWA] Błąd rejestracji Service Workera:", err);
+          });
+      });
+    }
+
+    window.addEventListener("online", () => {
+      oxyAlert("Przywrócono połączenie sieciowe.", "info", "TRYB ONLINE");
+    });
+
+    window.addEventListener("offline", () => {
+      oxyAlert(
+        "Praca w trybie lokalnym. Zmiany są zapisywane w pamięci urządzenia.",
+        "warning",
+        "TRYB OFFLINE",
+      );
+    });
+
+    let deferredPrompt = null;
+    const pwaInstallBtn = document.getElementById("btn-pwa-install");
+
+    if (pwaInstallBtn) {
+      pwaInstallBtn.style.display = "none";
+    }
+
+    window.addEventListener("beforeinstallprompt", (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      if (pwaInstallBtn) {
+        pwaInstallBtn.style.display = "flex";
+      }
+    });
+
+    if (pwaInstallBtn) {
+      pwaInstallBtn.addEventListener("click", async () => {
+        if (!deferredPrompt) return;
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        if (outcome === "accepted") {
+          oxyAlert("Instalacja OXY_OS rozpoczęta.", "success", "INSTALACJA");
+        }
+        deferredPrompt = null;
+        pwaInstallBtn.style.display = "none";
+      });
+    }
+
+    window.addEventListener("appinstalled", () => {
+      oxyAlert(
+        "Aplikacja OXY_OS została pomyślnie zainstalowana.",
+        "success",
+        "GOTOWE",
+      );
+      if (pwaInstallBtn) pwaInstallBtn.style.display = "none";
+    });
   }
 
   // ==========================================
@@ -1441,6 +1680,7 @@
   // ==========================================
   function bootApplication() {
     initLoginSystem();
+    initPWA();
 
     document.documentElement.setAttribute("theme", "dark");
 
@@ -1454,7 +1694,7 @@
       injectIcon("icon-cube-dest", AppIcons.cubeGlass);
       injectIcon("icon-cloud-download-dest", AppIcons.cloudDownload);
       injectIcon("icon-sun-dest", AppIcons.brightnessIncrease);
-      injectIcon("icon-file-download-dest", AppIcons.filedownload); // <-- DODANE
+      injectIcon("icon-file-download-dest", AppIcons.filedownload);
     }
 
     createShiftListModal();
@@ -1464,6 +1704,11 @@
     initCharts();
     startClock();
     renderSchedule();
+
+    // Jednorazowe wstępne utworzenie kont przy pierwszym uruchomieniu
+    if (typeof window.syncUsersFromSchedule === "function") {
+      window.syncUsersFromSchedule(true);
+    }
   }
 
   if (document.readyState === "loading") {
@@ -1472,68 +1717,3 @@
     bootApplication();
   }
 })();
-
-
-
-// Wklej wewnątrz IIFE (przed zamykającym "})();" w index.js):
-
-// Wklej wewnątrz IIFE (przed zamykającym "})();" w index.js):
-
-// ==========================================
-// 6. PWA SERVICE WORKER, OFFLINE & INSTALL
-// ==========================================
-if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker.register("./sw.js")
-      .then((reg) => {
-        console.log("[PWA] Service Worker zarejestrowany. Zakres:", reg.scope);
-      })
-      .catch((err) => {
-        console.error("[PWA] Błąd rejestracji Service Workera:", err);
-      });
-  });
-}
-
-// Detekcja i alerty online / offline
-window.addEventListener("online", () => {
-  oxyAlert("Przywrócono połączenie sieciowe.", "info", "TRYB ONLINE");
-});
-
-window.addEventListener("offline", () => {
-  oxyAlert("Praca w trybie lokalnym. Zmiany są zapisywane w pamięci urządzenia.", "warning", "TRYB OFFLINE");
-});
-
-// Obsługa promptu instalacji PWA
-let deferredPrompt = null;
-const pwaInstallBtn = document.getElementById("btn-pwa-install");
-
-// Ukryj domyślnie przycisk do momentu gotowości przeglądarki
-if (pwaInstallBtn) {
-  pwaInstallBtn.style.display = "none";
-}
-
-window.addEventListener("beforeinstallprompt", (e) => {
-  e.preventDefault();
-  deferredPrompt = e;
-  if (pwaInstallBtn) {
-    pwaInstallBtn.style.display = "flex";
-  }
-});
-
-if (pwaInstallBtn) {
-  pwaInstallBtn.addEventListener("click", async () => {
-    if (!deferredPrompt) return;
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    if (outcome === "accepted") {
-      oxyAlert("Instalacja OXY_OS rozpoczęta.", "success", "INSTALACJA");
-    }
-    deferredPrompt = null;
-    pwaInstallBtn.style.display = "none";
-  });
-}
-
-window.addEventListener("appinstalled", () => {
-  oxyAlert("Aplikacja OXY_OS została pomyślnie zainstalowana.", "success", "GOTOWE");
-  if (pwaInstallBtn) pwaInstallBtn.style.display = "none";
-});

@@ -270,9 +270,7 @@ a {
     width: 100%;
     max-width: 100rem;
     height: 920px;
-    /* STAŁA WYSOKOŚĆ - zajmuje okno minus margines */
     min-height: 650px;
-    /* Zabezpieczenie przed zbyt małym oknem */
     margin: 0 auto;
     display: flex;
     flex-direction: column;
@@ -284,41 +282,22 @@ a {
     position: relative;
     z-index: 0;
     overflow: hidden;
-    /* Zapobiega wychodzeniu elementów poza wrapper */
     transition: background var(--transition-speed), border var(--transition-speed);
 }
-
-
 
 .main-content {
     width: 100%;
     flex: 1;
-    /* DODANE: zajmuje całą dostępną wolną przestrzeń */
     display: flex;
     flex-direction: column;
-    gap: 0.125rem;
+
     box-shadow: var(--shadow-inset);
     position: relative;
     overflow: hidden;
-    /* Kontent główny nie przewija się jako całość... */
-    padding: 0.125rem;
+
     background-color: var(--card-bg);
     border: 1px solid var(--border-color);
 }
-
-/* .sidebar {
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    gap: 0.125rem;
-    position: relative;
-    overflow-y: auto;
-    overflow-x: hidden;
-    padding: 0.125rem;
-    box-shadow: var(--shadow-inset);
-    background: var(--bg-tertiary);
-    border: 1px solid var(--border-color);
-} */
 
 .dashboard-header {
     display: flex;
@@ -331,6 +310,7 @@ a {
     border: 1px solid var(--border-color);
     gap: 0.125rem;
     height: 40px;
+    margin: 0.125rem;
 }
 
 .page-title {
@@ -382,22 +362,18 @@ a {
     border: 1px solid var(--border-color);
     box-shadow: var(--shadow-drop);
     padding: 0rem;
-
 }
 
 .card {
     background-color: var(--card-bg);
     padding: 1rem;
-    /* Lekko zmniejszony padding dla lepszego upakowania */
     box-shadow: var(--shadow-drop);
     border: 1px solid var(--border-color);
     transition: background-color var(--transition-speed);
     display: flex;
     flex-direction: column;
     flex: 1;
-    /* Pozwala karcie wypełnić dostępne miejsce */
     min-height: 0;
-    /* Zapobiega wypychaniu kontenera przez flex */
 }
 
 .card-header {
@@ -430,7 +406,6 @@ a {
     position: relative;
     width: 100%;
     flex: 1;
-    /* Rozciąga wykres na całą wolną wysokość karty */
     min-height: 0;
 }
 
@@ -453,12 +428,14 @@ a {
     background-image: var(--background-v);
     border: 1px solid var(--border-color);
     padding: 0.125rem;
+    flex: none;
 }
 
 .widgets-grid {
     display: grid;
     grid-template-columns: repeat(1, minmax(0, 1fr));
     gap: 0.125rem;
+    flex: none;
 }
 
 .widget-card {
@@ -551,25 +528,6 @@ a {
     background-color: var(--danger-color);
 }
 
-* Zamiast sztywnych rem,
-używamy minimalnych wysokości */ .chart-large {
-    min-height: 12rem;
-}
-
-.chart-medium {
-    min-height: 10rem;
-}
-
-.chart-small {
-    min-height: 8rem;
-}
-
-.chart-sparkline {
-    height: 4rem;
-    margin-top: 1rem;
-    flex: none;
-}
-
 .view-dashboard-layout {
     display: flex;
     flex-direction: column;
@@ -579,25 +537,16 @@ używamy minimalnych wysokości */ .chart-large {
     padding: 0.125rem;
 }
 
-.widgets-grid {
-    display: grid;
-    grid-template-columns: repeat(1, minmax(0, 1fr));
-    flex: none;
-    /* Widżety zachowują swój rozmiar */
-}
-
 @media (min-width: 768px) {
     .widgets-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 }
 
-/* Sidebar musi być elastyczny dla wykresu w nim */
 .sidebar {
     display: flex;
     flex-direction: column;
     gap: 0.125rem;
-    /* Zwiększony odstęp między elementami */
     overflow-y: auto;
     overflow-x: hidden;
     padding: 0.125rem;
@@ -615,8 +564,6 @@ używamy minimalnych wysokości */ .chart-large {
     color: var(--text-primary);
     border: 1px solid var(--border-color);
 }
-
-
 
 .cc-header {
     display: flex;
@@ -730,8 +677,6 @@ używamy minimalnych wysokości */ .chart-large {
     justify-content: center;
 }
 
-
-
 .icon-purple {
     background-color: var(--highlight-bg);
     color: var(--highlight-color);
@@ -784,12 +729,6 @@ używamy minimalnych wysokości */ .chart-large {
     }
 }
 
-@media (min-width: 768px) {
-    .widgets-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-}
-
 @media (min-width: 1024px) {
     .dashboard-wrapper {
         flex-direction: row;
@@ -805,7 +744,7 @@ używamy minimalnych wysokości */ .chart-large {
 }
 
 /* ==========================================================================
-   ADDED VIEWS, NAVTABS & SCHEDULE TABLE STYLES (FROM OR.DEV)
+   ADDED VIEWS, NAVTABS & SCHEDULE TABLE STYLES
    ========================================================================== */
 
 /* Tabs & Buttons */
@@ -823,7 +762,7 @@ używamy minimalnych wysokości */ .chart-large {
 .btn {
     background-color: var(--bg-tertiary);
     border: 1px solid var(--border-color);
-    color: var(--text-color);
+    color: var(--text-muted);
     padding: 0.4rem 0.75rem;
     cursor: pointer;
     font-size: 0.85rem;
@@ -833,6 +772,10 @@ używamy minimalnych wysokości */ .chart-large {
     gap: 6px;
     transition: all var(--transition-speed);
     box-shadow: var(--shadow-drop);
+}
+
+.btn:hover {
+    color: var(--text-color);
 }
 
 .btn-group .btn {
@@ -865,7 +808,7 @@ używamy minimalnych wysokości */ .chart-large {
 }
 
 .btn.active i {
-    color: var(--highlight-color);
+    color: var(--text-color);
 }
 
 /* Views Management */
@@ -880,8 +823,6 @@ używamy minimalnych wysokości */ .chart-large {
 .view-container.active {
     display: flex;
 }
-
-
 
 /* Schedule Table */
 .schedule-view-content {
@@ -1017,7 +958,6 @@ textarea#json-editor {
     overflow: auto;
 }
 
-
 /* ==========================================
    ELEMENTY GENEROWANE DYNAMICZNIE (JS)
    ========================================== */
@@ -1100,7 +1040,6 @@ textarea#json-editor {
     padding: 8px 0;
     min-width: 15px;
     top: 0;
-    /* JS or CSS override may apply if double-layered */
 }
 
 .schedule-table th.sum-header {
@@ -1172,12 +1111,10 @@ textarea#json-editor {
     z-index: 9999;
     justify-content: center;
     align-items: center;
-
 }
 
 .shift-modal-overlay.active {
     display: flex;
-    /* Klasa sterowana z JS */
 }
 
 .shift-modal-content {
@@ -1206,6 +1143,8 @@ textarea#json-editor {
     margin: 0;
     font-size: 0.75rem;
     color: var(--text-muted);
+    display: flex;
+    align-items: center;
 }
 
 .shift-modal-title i {
@@ -1233,12 +1172,15 @@ textarea#json-editor {
     background: var(--hover-bg);
 }
 
+/* KONTENER KOLUMN MODALA: pionowo obok siebie */
 .shift-modal-body {
     padding: 0.5rem;
     overflow-y: auto;
     display: flex;
-    flex-wrap: wrap;
-    gap: 0.125rem;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    gap: 0.5rem;
+    align-items: stretch;
 }
 
 .shift-modal-empty {
@@ -1247,9 +1189,10 @@ textarea#json-editor {
     color: var(--text-muted);
 }
 
+/* POJEDYNCZA KOLUMNA PIONOWA */
 .shift-column {
-    flex: 1 1 250px;
-    min-width: 250px;
+    flex: 1 1 50%;
+    min-width: 0;
     display: flex;
     flex-direction: column;
     background: var(--bg-tertiary);
@@ -1274,10 +1217,12 @@ textarea#json-editor {
     color: #ff0055;
 }
 
+/* PRZEWIJANA LISTA W KOLUMNIE */
 .shift-col-list {
-    padding: 1rem;
+    flex: 1;
+    padding: 0.5rem;
     overflow-y: auto;
-    max-height: 40vh;
+    max-height: 55vh;
 }
 
 .shift-worker-item {
@@ -1291,7 +1236,7 @@ textarea#json-editor {
 
 .shift-worker-name {
     font-weight: 600;
-    color: var(--text-color);
+    color: var(--text-muted);
 }
 
 .shift-worker-id {
@@ -1355,7 +1300,6 @@ textarea#json-editor {
 .cal-cell.weekend {
     background-color: var(--bg-color);
     background-image: var(--highlight-v);
-
 }
 
 .cal-cell.empty {
@@ -1394,37 +1338,6 @@ textarea#json-editor {
     color: var(--text-color);
 }
 
-.cal-stats {
-    display: flex;
-    gap: 10px;
-    justify-content: space-between;
-    background: var(--panel-bg);
-    padding: 15px;
-    border: 1px solid var(--border-color);
-}
-
-.cal-stat-box {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    font-size: 12px;
-    flex: 1;
-}
-
-.cal-stat-box span {
-    color: var(--text-muted);
-    font-size: 11px;
-    margin-bottom: 4px;
-    text-transform: uppercase;
-}
-
-.cal-stat-box strong {
-    font-size: 20px;
-    color: var(--highlight-color);
-}
-
-
-
 .icon-btn svg {
     display: flex;
     justify-content: center;
@@ -1432,11 +1345,6 @@ textarea#json-editor {
     width: 24px;
     height: 24px;
 }
-
-
-/* --- KALENDARZ PRACOWNIKA (MODAL) --- */
-
-/* Statystyki kalendarza - pełny układ (zgodnie z index.js 425-460) */
 
 .cal-success {
     color: #00b787;
@@ -1471,7 +1379,6 @@ textarea#json-editor {
     justify-content: center;
 }
 
-/* Pełny układ statystyk kalendarza (wersja "pelny uklad") */
 .cal-stats {
     display: flex;
     flex-direction: row;
@@ -1485,7 +1392,6 @@ textarea#json-editor {
     overflow: hidden;
 }
 
-/* Każde pole statystyki w boksie, równy podział przestrzeni */
 .cal-stat-box {
     display: flex;
     flex-direction: column;
@@ -1498,6 +1404,7 @@ textarea#json-editor {
     padding: 0.125rem;
     box-shadow: var(--shadow-drop);
     gap: 0.125rem;
+    flex: 1;
 }
 
 .cal-stat-box span {
@@ -1581,11 +1488,9 @@ textarea#json-editor {
     border-top: 4px solid var(--highlight-color);
 }
 
-/* Ukrywa całą główną aplikację gdy jest zablokowana */
 .dashboard-wrapper.locked {
     display: none !important;
 }
-
 
 /* ==========================================
    SYSTEM POWIADOMIEŃ (ALERTY OXY_OS)
@@ -1633,7 +1538,6 @@ textarea#json-editor {
     width: 4px;
 }
 
-/* Kolory w zależności od typu błędu/sukcesu */
 .oxy-alert.success::before {
     background-color: var(--success-color);
 }
@@ -1714,7 +1618,6 @@ textarea#json-editor {
     }
 }
 
-/* Optymalizacja na ekrany mobilne */
 @media (max-width: 640px) {
     #oxy-alert-container {
         top: 10px;
@@ -1751,4 +1654,168 @@ textarea#json-editor {
             opacity: 0;
         }
     }
+}
+
+/* ==========================================
+   MODAL DAY CONTROLS (Obsada Zmianowa)
+   ========================================== */
+.modal-day-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.125rem;
+    margin-left: 10px;
+    box-shadow: var(--shadow-inset);
+    padding: 0.125rem;
+    position: relative;
+    overflow: hidden;
+}
+
+.modal-nav-btn {
+    padding: 0.5rem 1rem;
+    height: 35px;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-day-select {
+    padding: 0 1rem;
+    border: 1px solid var(--border-color);
+    background: var(--input-bg);
+    color: var(--text-color);
+    font-size: 14px;
+    cursor: pointer;
+    max-width: 192px;
+    box-shadow: var(--shadow-drop);
+    height: 35px;
+}
+
+/* ==========================================================================
+   DE-INLINED UTILITY & COMPONENT CLASSES (CLEAN HTML MIGRATION)
+   ========================================================================== */
+
+/* Login Overlay Elements */
+.login-lock-icon {
+    width: 48px;
+    height: 48px;
+    margin: 0 auto 1rem;
+}
+
+.login-lock-glyph {
+    font-size: 48px;
+    color: var(--highlight-color);
+    text-align: center;
+    display: block;
+}
+
+.login-box-title {
+    text-align: center;
+    margin-bottom: 1.5rem;
+}
+
+.login-input-field {
+    width: 100%;
+    height: 45px;
+    text-align: center;
+    font-size: 14px;
+    margin-bottom: 0.5rem;
+    border: 1px solid var(--border-color);
+    background: var(--input-bg);
+    color: var(--text-color);
+}
+
+.login-submit-btn {
+    width: 100%;
+    justify-content: center;
+    height: 45px;
+}
+
+.login-error-msg {
+    color: var(--danger-color);
+    text-align: center;
+    margin-top: 1rem;
+    display: none;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+/* Users Modal Elements */
+.users-modal-content {
+    max-width: 520px;
+}
+
+.users-modal-heading-icon {
+    color: var(--highlight-color);
+    margin-right: 8px;
+}
+
+.users-modal-header-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.btn-sync-users {
+    height: 28px;
+    font-size: 11px;
+}
+
+.users-modal-body {
+    flex-direction: column;
+}
+
+.users-add-form {
+    display: flex;
+    gap: 5px;
+    margin-bottom: 1rem;
+}
+
+.user-form-input {
+    flex: 1;
+    border: 1px solid var(--border-color);
+    background: var(--input-bg);
+    height: 35px;
+    text-align: left;
+    padding: 0 10px;
+}
+
+.btn-add-user-action {
+    border-radius: 0 !important;
+}
+
+.users-list-container {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+/* Header & Icons */
+.cube-icon-container {
+    width: 48px;
+    height: 48px;
+}
+
+.logout-icon {
+    color: var(--danger-color);
+}
+
+/* Sidebar Components */
+.section-title-spacing {
+    margin-bottom: 1rem;
+}
+
+.card-header-column {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+}
+
+.last-update-text {
+    font-size: 13px;
+    color: var(--text-muted);
+}
+
+.last-update-icon {
+    margin-right: 5px;
 }
