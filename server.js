@@ -2,6 +2,7 @@ const express = require("express");
 const cors = require("cors");
 const fs = require("fs");
 const path = require("path");
+const bcrypt = require("bcryptjs");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -11,20 +12,68 @@ const GITHUB_JSON_URL = "https://raw.githubusercontent.com/s-pro-v/json-lista/re
 app.use(cors());
 app.use(express.json());
 
-// Inicjalizacja bazy użytkowników
+// Prosty rejestr prób logowania (ochrona przed atakami Brute-Force na IP)
+const loginAttempts = new Map();
+
+function isRateLimited(ip) {
+    const now = Date.now();
+    const entry = loginAttempts.get(ip);
+    if (!entry) return false;
+    if (now > entry.resetAt) {
+        loginAttempts.delete(ip);
+        return false;
+    }
+    return entry.count >= 5;
+}
+
+function registerFailedAttempt(ip) {
+    const now = Date.now();
+    const entry = loginAttempts.get(ip) || { count: 0, resetAt: now + 60000 };
+    entry.count++;
+    loginAttempts.set(ip, entry);
+}
+
+function resetAttempts(ip) {
+    loginAttempts.delete(ip);
+}
+
+// Sprawdzenie czy hasło jest już haszem bcrypt
+function isHash(pass) {
+    return typeof pass === "string" && (pass.startsWith("$2a$") || pass.startsWith("$2b$"));
+}
+
+// Baza danych użytkowników z automatycznym haszowaniem tekstu jawnego
 function loadUsers() {
+    let users = [];
     if (!fs.existsSync(DB_FILE)) {
-        const initialUsers = [
-            { user: "admin", pass: "admin123", role: "admin", workerId: null }
+        users = [
+            { user: "admin", pass: bcrypt.hashSync("admin123", 10), role: "admin", workerId: null }
         ];
-        fs.writeFileSync(DB_FILE, JSON.stringify(initialUsers, null, 2));
-        return initialUsers;
+        fs.writeFileSync(DB_FILE, JSON.stringify(users, null, 2));
+        return users;
     }
+
     try {
-        return JSON.parse(fs.readFileSync(DB_FILE, "utf-8"));
+        users = JSON.parse(fs.readFileSync(DB_FILE, "utf-8"));
     } catch (e) {
-        return [{ user: "admin", pass: "admin123", role: "admin", workerId: null }];
+        users = [{ user: "admin", pass: bcrypt.hashSync("admin123", 10), role: "admin", workerId: null }];
     }
+
+    // Automatyczna migracja istniejących haseł tekstowych do bcrypt
+    let migrated = false;
+    users.forEach(u => {
+        if (!isHash(u.pass)) {
+            u.pass = bcrypt.hashSync(u.pass, 10);
+            migrated = true;
+        }
+    });
+
+    if (migrated) {
+        fs.writeFileSync(DB_FILE, JSON.stringify(users, null, 2));
+        console.log("[SECURITY] Zmigrowano dotychczasowe hasła tekstowe do skrótów Bcrypt.");
+    }
+
+    return users;
 }
 
 function saveUsers(users) {
@@ -34,18 +83,22 @@ function saveUsers(users) {
 function generateUniquePass(firstName, workerId, fallbackIdx, existingUsers) {
     const cleanFirst = (firstName || "Pracownik").trim().split(" ")[0];
     const idPart = workerId != null ? workerId : fallbackIdx + 1;
-    let candidate = `${cleanFirst}${idPart}`;
-    let counter = 1;
-
-    while (existingUsers.some(u => u.pass && u.pass.toLowerCase() === candidate.toLowerCase())) {
-        candidate = `${cleanFirst}${idPart}_${counter}`;
-        counter++;
-    }
-    return candidate;
+    return `${cleanFirst}${idPart}`;
 }
 
-// ENDPOINT 1: Logowanie (para login+hasło lub samo unikalne hasło)
+// ========================================================
+// ENDPOINT: Logowanie (Obsługa admina i pracowników)
+// ========================================================
 app.post("/api/login", (req, res) => {
+    const clientIp = req.headers["x-forwarded-for"] || req.socket.remoteAddress;
+
+    if (isRateLimited(clientIp)) {
+        return res.status(429).json({
+            success: false,
+            message: "Zbyt wiele prób logowania. Odczekaj 60 sekund."
+        });
+    }
+
     const { login, password } = req.body;
     const users = loadUsers();
     const rawLogin = (login || "").trim().toLowerCase();
@@ -57,20 +110,25 @@ app.post("/api/login", (req, res) => {
 
     let matchedUser = null;
 
-    // Tryb 1: Pełne logowanie (login + hasło)
+    // 1. Logowanie z podanym loginem i hasłem (szybkie - O(1))
     if (rawLogin && rawPass) {
-        matchedUser = users.find(u => u.user.toLowerCase() === rawLogin && u.pass === rawPass);
+        const candidate = users.find(u => u.user.toLowerCase() === rawLogin);
+        if (candidate && bcrypt.compareSync(rawPass, candidate.pass)) {
+            matchedUser = candidate;
+        }
     }
-    // Tryb 2: Logowanie samym unikalnym hasłem wpisanym w pole hasła
-    else if (!rawLogin && rawPass) {
-        matchedUser = users.find(u => u.pass === rawPass);
-    }
-    // Tryb 3: Logowanie hasłem wpisanym w pierwsze pole
-    else if (rawLogin && !rawPass) {
-        matchedUser = users.find(u => u.pass.toLowerCase() === rawLogin);
+    // 2. Logowanie samym hasłem (weryfikacja skrótu)
+    else if (rawPass) {
+        for (const u of users) {
+            if (bcrypt.compareSync(rawPass, u.pass)) {
+                matchedUser = u;
+                break;
+            }
+        }
     }
 
     if (matchedUser) {
+        resetAttempts(clientIp);
         return res.json({
             success: true,
             user: {
@@ -81,19 +139,30 @@ app.post("/api/login", (req, res) => {
         });
     }
 
+    registerFailedAttempt(clientIp);
     return res.status(401).json({
         success: false,
-        message: "Odmowa autoryzacji: nieprawidłowe poświadczenia."
+        message: "Odmowa autoryzacji: nieprawidłowe hasło."
     });
 });
 
-// ENDPOINT 2: Pobieranie listy kont (dla panelu administratora)
+// ========================================================
+// ENDPOINT: Pobieranie listy użytkowników (BEZ UJAWNIANIA HASEŁ)
+// ========================================================
 app.get("/api/users", (req, res) => {
     const users = loadUsers();
-    res.json({ success: true, users });
+    // Zwracamy listę bez hashy kryptograficznych dla bezpieczeństwa
+    const sanitized = users.map(u => ({
+        user: u.user,
+        role: u.role,
+        workerId: u.workerId
+    }));
+    res.json({ success: true, users: sanitized });
 });
 
-// ENDPOINT 3: Dodanie nowego konta
+// ========================================================
+// ENDPOINT: Dodanie użytkownika przez administratora
+// ========================================================
 app.post("/api/users", (req, res) => {
     const { user, pass, role } = req.body;
     if (!user || !pass) {
@@ -108,18 +177,21 @@ app.post("/api/users", (req, res) => {
         return res.status(400).json({ success: false, message: "Użytkownik o tym loginie już istnieje." });
     }
 
-    if (users.some(u => u.pass.toLowerCase() === cleanPass.toLowerCase())) {
-        return res.status(400).json({ success: false, message: "To hasło jest zajęte. Wpisz inne unikalne hasło." });
-    }
-
-    const newUser = { user: cleanUser, pass: cleanPass, role: role || "custom", workerId: null };
+    // Haszowanie nowego hasła przed zapisem do bazy
+    const hashedPass = bcrypt.hashSync(cleanPass, 10);
+    const newUser = { user: cleanUser, pass: hashedPass, role: role || "custom", workerId: null };
     users.push(newUser);
     saveUsers(users);
 
-    res.json({ success: true, user: newUser });
+    res.json({
+        success: true,
+        user: { user: newUser.user, role: newUser.role, workerId: newUser.workerId }
+    });
 });
 
-// ENDPOINT 4: Usuwanie konta
+// ========================================================
+// ENDPOINT: Usunięcie konta
+// ========================================================
 app.delete("/api/users/:username", (req, res) => {
     const { username } = req.params;
     let users = loadUsers();
@@ -128,22 +200,24 @@ app.delete("/api/users/:username", (req, res) => {
         return res.status(403).json({ success: false, message: "Konta administratora nie można usunąć." });
     }
 
-    const initialLen = users.length;
+    const prevLen = users.length;
     users = users.filter(u => u.user.toLowerCase() !== username.toLowerCase());
 
-    if (users.length === initialLen) {
+    if (users.length === prevLen) {
         return res.status(404).json({ success: false, message: "Nie znaleziono użytkownika." });
     }
 
     saveUsers(users);
-    res.json({ success: true, message: "Użytkownik usunięty." });
+    res.json({ success: true, message: "Konto usunięte." });
 });
 
-// ENDPOINT 5: Synchronizacja z GitHubem i generowanie unikalnych haseł
+// ========================================================
+// ENDPOINT: Synchronizacja z GitHub z bezpiecznym haszowaniem
+// ========================================================
 app.post("/api/sync-github", async (req, res) => {
     try {
         const fetchRes = await fetch(`${GITHUB_JSON_URL}?_t=${Date.now()}`);
-        if (!fetchRes.ok) throw new Error("Błąd pobierania pliku z GitHub");
+        if (!fetchRes.ok) throw new Error("Błąd pobierania bazy grafiku z GitHub");
         const monthsData = await fetchRes.json();
 
         const users = loadUsers();
@@ -158,36 +232,38 @@ app.post("/api/sync-github", async (req, res) => {
                 const exists = users.find(u => u.user.toLowerCase() === userName.toLowerCase());
 
                 if (!exists) {
-                    const pass = w.pass ? w.pass.trim() : generateUniquePass(w.name, w.id, idx, users);
+                    const plainPass = w.pass ? w.pass.trim() : generateUniquePass(w.name, w.id, idx, users);
+                    // Zapisujemy wyłącznie zahaszowane hasło
                     users.push({
                         user: userName,
-                        pass: pass,
+                        pass: bcrypt.hashSync(plainPass, 10),
                         role: "worker",
                         workerId: w.id || null
                     });
                     addedCount++;
                 } else {
                     if (w.id != null && exists.workerId == null) exists.workerId = w.id;
-                    if (w.pass && exists.pass !== w.pass.trim()) exists.pass = w.pass.trim();
+                    if (w.pass && !bcrypt.compareSync(w.pass.trim(), exists.pass)) {
+                        exists.pass = bcrypt.hashSync(w.pass.trim(), 10);
+                    }
                 }
             });
         });
 
         saveUsers(users);
-        res.json({ success: true, addedCount, users, monthsData });
+        res.json({ success: true, addedCount });
     } catch (err) {
         res.status(500).json({ success: false, message: err.message });
     }
 });
 
-// Serwowanie plików statycznych frontendu (HTML, CSS, JS, ikony)
+// Serwowanie plików frontendu
 app.use(express.static(path.join(__dirname, ".")));
 
-// Fallback dla tras PWA
 app.get("*", (req, res) => {
     res.sendFile(path.join(__dirname, "index.html"));
 });
 
 app.listen(PORT, () => {
-    console.log(`[OXY_OS] Serwer autoryzacji uruchomiony na porcie ${PORT}`);
+    console.log(`[OXY_OS] Bezpieczny serwer autoryzacji uruchomiony na porcie ${PORT}`);
 });
