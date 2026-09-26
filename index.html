@@ -23,24 +23,7 @@
 </head>
 
 <body>
-    <!-- EKRAN LOGOWANIA -->
-    <div id="login-overlay" class="login-overlay">
-        <div class="login-box card">
-            <div id="icon-lock-dest" class="login-lock-icon">
-                <i class="fas fa-lock login-lock-glyph"></i>
-            </div>
-            <h2 class="card-title login-box-title">AUTORYZACJA OXY_OS</h2>
-            <div class="login-input-group">
-                <input type="text" id="login-username" class="shift-input login-input-field"
-                    placeholder="Nazwa użytkownika...">
-                <input type="password" id="login-password" class="shift-input login-input-field"
-                    placeholder="Wprowadź hasło...">
-                <button id="btn-login" class="btn active login-submit-btn">ZALOGUJ</button>
-            </div>
-            <p id="login-error" class="login-error-msg">
-                Odmowa dostępu. Nieprawidłowy login lub hasło.</p>
-        </div>
-    </div>
+    <!-- EKRAN LOGOWANIA JEST TERAZ W CAŁOŚCI GENEROWANY DYNAMICZNIE PRZEZ OxyLogin.render() -->
 
     <!-- MODAL ZARZĄDZANIA UŻYTKOWNIKAMI -->
     <div id="users-modal-overlay" class="shift-modal-overlay">
@@ -50,36 +33,44 @@
                     <i class="fas fa-users users-modal-heading-icon"></i> Zarządzanie Użytkownikami
                 </h3>
                 <div class="users-modal-header-actions">
-                    <button id="btn-sync-users" class="btn btn-sync-users"
-                        title="Generuj konta na podstawie pracowników z grafiku">
-                        <i class="fas fa-rotate"></i> SYNCHRONIZUJ
-                    </button>
-                    <button id="users-modal-close" class="shift-modal-close">&times;</button>
+                    <div class="btn-bg">
+                        <button id="btn-sync-users" class="btn btn-sync-users"
+                            title="Generuj konta na podstawie pracowników z grafiku">
+                            <i class="fas fa-rotate"></i> SYNCHRONIZUJ
+                        </button>
+                    </div>
+                    <div class="chassis-socket">
+                        <button id="users-modal-close" class="shift-modal-close">&times;</button>
+                    </div>
                 </div>
             </div>
             <div class="shift-modal-body users-modal-body">
                 <div class="users-add-form">
-                    <input type="text" id="new-username" class="shift-input user-form-input" placeholder="Nowy login">
-                    <input type="password" id="new-password" class="shift-input user-form-input" placeholder="Hasło">
-                    <button id="btn-add-user" class="btn active btn-add-user-action"><i
-                            class="fas fa-plus"></i></button>
+                    <div class="input-chassis">
+                        <input type="text" id="new-username" class="shift-input user-form-input tactile-input"
+                            placeholder="Nowy login">
+                    </div>
+                    <div class="input-chassis">
+                        <input type="password" id="new-password" class="shift-input user-form-input tactile-input"
+                            placeholder="Unikalne hasło">
+                    </div>
+                    <div class="btn-bg">
+                        <button id="btn-add-user" class="btn active btn-add-user-action"><i
+                                class="fas fa-plus"></i></button>
+                    </div>
                 </div>
-                <div id="users-list" class="users-list-container">
-                    <!-- Zostanie wypełnione przez JS -->
-                </div>
+                <div id="users-list" class="users-list-container"></div>
             </div>
         </div>
     </div>
-    <div class="dashboard-wrapper">
 
+    <div class="dashboard-wrapper locked">
         <div class="main-content">
-
             <header class="dashboard-header">
-
                 <div id="icon-cube-dest" class="cube-icon-container"></div>
                 <h1 class="page-title">Workspace</h1>
 
-                <div class="btn-group">
+                <div class="btn-group tab-chassis">
                     <button id="btn-view-dashboard" class="btn active" title="Dashboard">
                         <i class="fas fa-chart-pie"></i> Dashboard
                     </button>
@@ -91,7 +82,7 @@
                     </button>
                 </div>
 
-                <div class="user-controls">
+                <div class="user-controls chassis-socket">
                     <button class="icon-btn" id="btn-cloud-fetch" title="Pobierz z chmury (GitHub)">
                         <div class="icon-btn-icon" id="icon-cloud-download-dest"></div>
                     </button>
@@ -101,7 +92,6 @@
                     <button class="icon-btn" id="btn-pwa-install" title="Zainstaluj aplikację">
                         <div class="icon-btn-icon" id="icon-file-download-dest"></div>
                     </button>
-
                     <button class="icon-btn" id="btn-users" title="Zarządzaj użytkownikami">
                         <i class="fas fa-user-cog"></i>
                     </button>
@@ -114,13 +104,16 @@
             </header>
 
             <div id="view-dashboard" class="view-container active view-dashboard-layout">
-                <div class="card">
+                <div class="card hud-bracket">
                     <div class="card-header">
                         <h2 class="card-title">Statistics</h2>
-                        <select class="year-selector">
-                            <option value="2026">2026</option>
-                            <option value="2025">2025</option>
-                        </select>
+                        <div class="select-chassis" style="padding:0; border:none;">
+                            <select class="year-selector tactile-input"
+                                style="height:100%; box-shadow:none; border:none; margin:0; outline:none;">
+                                <option value="2026">2026</option>
+                                <option value="2025">2025</option>
+                            </select>
+                        </div>
                     </div>
                     <div class="chart-wrapper chart-large">
                         <canvas id="mainStatsChart"></canvas>
@@ -128,7 +121,7 @@
                 </div>
 
                 <div class="widgets-grid">
-                    <div class="card widget-card">
+                    <div class="card hud-bracket widget-card">
                         <div class="widget-header">
                             <div>
                                 <p class="widget-label">Total Income</p>
@@ -147,7 +140,7 @@
                         </div>
                     </div>
 
-                    <div class="card widget-card">
+                    <div class="card hud-bracket widget-card">
                         <div class="widget-header">
                             <div>
                                 <p class="widget-label">Total Outcome</p>
@@ -167,7 +160,7 @@
                     </div>
                 </div>
 
-                <div class="card">
+                <div class="card hud-bracket">
                     <div class="card-header">
                         <h2 class="card-title">Cash Flow Dynamics</h2>
                         <div class="legend-area">
@@ -182,8 +175,7 @@
             </div>
 
             <div id="view-schedule" class="view-container">
-                <div class="schedule-view-content" id="schedule-content">
-                </div>
+                <div class="schedule-view-content" id="schedule-content"></div>
             </div>
 
             <div id="view-code" class="view-container">
@@ -192,11 +184,9 @@
                     <textarea id="json-editor" spellcheck="false"></textarea>
                 </div>
             </div>
-
         </div>
 
         <aside class="sidebar">
-
             <div class="credit-card" id="time-card">
                 <div class="cc-header">
                     <h3 class="cc-brand" id="tc-month">Wczytywanie...</h3>
@@ -204,7 +194,9 @@
                 </div>
                 <div>
                     <p class="cc-balance-label">Aktualny Czas</p>
-                    <h2 class="cc-balance" id="tc-time">00:00:00</h2>
+                    <div class="seven-segment-chassis">
+                        <h2 class="cc-balance seven-segment-digits" id="tc-time">00:00:00</h2>
+                    </div>
                 </div>
                 <div class="cc-footer">
                     <div>
@@ -218,7 +210,7 @@
                 </div>
             </div>
 
-            <div class="card">
+            <div class="card hud-bracket">
                 <h2 class="card-title section-title-spacing">People per Position</h2>
                 <div>
                     <p class="widget-label">Range (number of people)</p>
@@ -230,21 +222,24 @@
                 </div>
             </div>
 
-            <div class="card transactions-card">
+            <div class="card hud-bracket transactions-card">
                 <div class="card-header card-header-column">
                     <h2 class="card-title">Ostatnia Aktualizacja</h2>
-                    <p id="last-update-time" class="last-update-text">
+                    <p id="last-update-time" class="last-update-text tactile-badge"
+                        style="display:inline-flex; align-items:center; gap:0.5rem;">
+                        <span class="led-indicator"
+                            style="background-color:var(--highlight-color);box-shadow:0 0 10px var(--highlight-color);"></span>
                         <i class="fas fa-clock last-update-icon"></i> Brak danych
                     </p>
                 </div>
 
-                <div class="transactions-list" id="system-info-list">
-                    <!-- Wygenerowane przez JS -->
-                </div>
+                <div class="transactions-list" id="system-info-list"></div>
             </div>
         </aside>
     </div>
 
+    <!-- SKRYPTY SYSTEMOWE -->
+    <script src="auth_renderer.js"></script>
     <script src="index.js"></script>
     <script src="icons.js"></script>
 </body>

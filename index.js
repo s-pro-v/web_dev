@@ -2,7 +2,254 @@
   "use strict";
 
   // ==========================================
-  // SYSTEM ALERTÓW OXY_OS
+  // SYNTEZATOR DŹWIĘKU SPRZĘTOWEGO (HARDWARE AUDIO)
+  // ==========================================
+  class HardwareAudio {
+    constructor() {
+      this.ctx = null;
+      this.enabled = true;
+    }
+
+    init() {
+      if (!this.ctx) {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (AudioCtx) this.ctx = new AudioCtx();
+      }
+      if (this.ctx && this.ctx.state === "suspended") {
+        this.ctx.resume();
+      }
+    }
+
+    playClick(type = "normal") {
+      if (!this.enabled) return;
+      try {
+        this.init();
+        if (!this.ctx) return;
+
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        const now = this.ctx.currentTime;
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+
+        if (type === "heavy") {
+          osc.type = "triangle";
+          osc.frequency.setValueAtTime(160, now);
+          osc.frequency.exponentialRampToValueAtTime(40, now + 0.04);
+          gain.gain.setValueAtTime(0.3, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
+          osc.start(now);
+          osc.stop(now + 0.04);
+        } else if (type === "switch") {
+          osc.type = "square";
+          osc.frequency.setValueAtTime(800, now);
+          osc.frequency.exponentialRampToValueAtTime(200, now + 0.02);
+          gain.gain.setValueAtTime(0.12, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.02);
+          osc.start(now);
+          osc.stop(now + 0.02);
+        } else {
+          osc.type = "sine";
+          osc.frequency.setValueAtTime(1200, now);
+          osc.frequency.exponentialRampToValueAtTime(300, now + 0.015);
+          gain.gain.setValueAtTime(0.15, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.015);
+          osc.start(now);
+          osc.stop(now + 0.015);
+        }
+      } catch (e) {
+        // Fallback w przypadku braku uprawnień audio
+      }
+    }
+  }
+
+  const audio = new HardwareAudio();
+
+  // ==========================================
+  // KONTROLKA TAKTYLNA: CUSTOM SELECT
+  // ==========================================
+  class CustomSelect {
+    constructor(element, onSelectCallback = null) {
+      this.container = element;
+      this.chassis = element.querySelector(".select-chassis");
+      this.trigger = element.querySelector(".select-trigger");
+      this.optionsContainer = element.querySelector(".select-options");
+      this.options = Array.from(element.querySelectorAll(".option"));
+      this.hiddenInput = element.querySelector('input[type="hidden"]');
+      this.triggerContent = element.querySelector(".trigger-content");
+      this.onSelectCallback = onSelectCallback;
+
+      this.isOpen = false;
+      this.focusedOptionIndex = -1;
+
+      this.init();
+    }
+
+    init() {
+      this.trigger.addEventListener("click", (e) => {
+        e.stopPropagation();
+        audio.playClick("switch");
+        this.toggle();
+      });
+
+      this.options.forEach((opt, index) => {
+        opt.addEventListener("click", (e) => {
+          e.stopPropagation();
+          audio.playClick("normal");
+          this.selectOption(opt);
+          this.close();
+        });
+
+        opt.addEventListener("mouseenter", () => {
+          this.setFocusedIndex(index, false);
+        });
+      });
+
+      this.trigger.addEventListener("keydown", (e) => this.handleKeyDown(e));
+
+      const initialSelected = this.options.findIndex((opt) =>
+        opt.classList.contains("selected")
+      );
+      if (initialSelected !== -1) {
+        this.focusedOptionIndex = initialSelected;
+      }
+    }
+
+    toggle() {
+      if (this.isOpen) {
+        this.close();
+      } else {
+        CustomSelect.closeAll(this);
+        this.open();
+      }
+    }
+
+    open() {
+      this.isOpen = true;
+      if (this.chassis) this.chassis.classList.add("active");
+      this.trigger.classList.add("active");
+      this.trigger.setAttribute("aria-expanded", "true");
+      this.optionsContainer.classList.add("show");
+
+      const selected = this.options.find((opt) =>
+        opt.classList.contains("selected")
+      );
+      if (selected) {
+        selected.scrollIntoView({ block: "nearest" });
+      }
+    }
+
+    close() {
+      if (!this.isOpen) return;
+      this.isOpen = false;
+      if (this.chassis) this.chassis.classList.remove("active");
+      this.trigger.classList.remove("active");
+      this.trigger.setAttribute("aria-expanded", "false");
+      this.optionsContainer.classList.remove("show");
+      this.clearKeyboardFocus();
+    }
+
+    handleKeyDown(e) {
+      if (!this.isOpen) {
+        if (["ArrowDown", "ArrowUp", "Enter", " "].includes(e.key)) {
+          e.preventDefault();
+          this.open();
+        }
+        return;
+      }
+
+      switch (e.key) {
+        case "ArrowDown":
+          e.preventDefault();
+          this.moveFocus(1);
+          break;
+        case "ArrowUp":
+          e.preventDefault();
+          this.moveFocus(-1);
+          break;
+        case "Enter":
+        case " ":
+          e.preventDefault();
+          if (
+            this.focusedOptionIndex >= 0 &&
+            this.focusedOptionIndex < this.options.length
+          ) {
+            this.selectOption(this.options[this.focusedOptionIndex]);
+            this.close();
+          }
+          break;
+        case "Escape":
+          e.preventDefault();
+          this.close();
+          this.trigger.focus();
+          break;
+      }
+    }
+
+    moveFocus(delta) {
+      let newIndex = this.focusedOptionIndex + delta;
+      if (newIndex < 0) newIndex = this.options.length - 1;
+      if (newIndex >= this.options.length) newIndex = 0;
+      this.setFocusedIndex(newIndex);
+    }
+
+    setFocusedIndex(index, scroll = true) {
+      this.clearKeyboardFocus();
+      this.focusedOptionIndex = index;
+      const opt = this.options[index];
+      if (opt) {
+        opt.classList.add("keyboard-focused");
+        if (scroll) opt.scrollIntoView({ block: "nearest" });
+      }
+    }
+
+    clearKeyboardFocus() {
+      this.options.forEach((opt) => opt.classList.remove("keyboard-focused"));
+    }
+
+    selectOption(optionElement) {
+      const val = optionElement.getAttribute("data-value");
+      const icon = optionElement.querySelector("i");
+      const text = optionElement.textContent.trim();
+
+      this.options.forEach((opt) => {
+        const isSelected = opt === optionElement;
+        opt.classList.toggle("selected", isSelected);
+        opt.setAttribute("aria-selected", isSelected ? "true" : "false");
+      });
+
+      let iconHtml = "";
+      if (icon) {
+        iconHtml = `<i class="${icon.className}"></i>`;
+      }
+      this.triggerContent.innerHTML = `${iconHtml}<span>${text}</span>`;
+
+      if (this.hiddenInput) {
+        this.hiddenInput.value = val;
+        this.hiddenInput.dispatchEvent(new Event("change", { bubbles: true }));
+      }
+
+      if (typeof this.onSelectCallback === "function") {
+        this.onSelectCallback({
+          name: this.container.getAttribute("data-name"),
+          value: val,
+          label: text,
+        });
+      }
+    }
+
+    static closeAll(exceptInstance = null) {
+      document.querySelectorAll(".custom-select").forEach((el) => {
+        if (el._customSelect && el._customSelect !== exceptInstance) {
+          el._customSelect.close();
+        }
+      });
+    }
+  }
+
+  // ==========================================
+  // SYSTEM ALERTÓW I MONITÓW OXY_OS
   // ==========================================
   function oxyAlert(message, type = "info", title = "") {
     let container = document.getElementById("oxy-alert-container");
@@ -46,9 +293,6 @@
     }, 4000);
   }
 
-  // ==========================================
-  // SYSTEM POTWIERDZEŃ (MODAL OXY_OS)
-  // ==========================================
   function oxyConfirm(message, onConfirm) {
     let overlay = document.getElementById("oxy-confirm-overlay");
     if (!overlay) {
@@ -62,8 +306,8 @@
           <h2 class="card-title" style="margin-bottom: 1rem;">WYMAGANE POTWIERDZENIE</h2>
           <p id="oxy-confirm-msg" style="margin-bottom: 1.5rem; color: var(--text-muted); font-size: 14px; line-height: 1.4;"></p>
           <div style="display: flex; gap: 10px;">
-            <button id="oxy-confirm-no" class="btn" style="flex: 1; justify-content: center; height: 40px;">ANULUJ</button>
-            <button id="oxy-confirm-yes" class="btn active" style="flex: 1; justify-content: center; height: 40px; background: var(--danger-color) !important; border-color: var(--danger-color) !important; color: #fff;">TAK, WYKONAJ</button>
+            <div class="btn-bg" style="flex: 1; display:flex;"><button id="oxy-confirm-no" class="btn" style="flex: 1; justify-content: center; height: 40px; border:none;">ANULUJ</button></div>
+            <div class="btn-bg" style="flex: 1; display:flex;"><button id="oxy-confirm-yes" class="btn active" style="flex: 1; justify-content: center; height: 40px; background: var(--danger-color) !important; border:none; color: #fff;">TAK, WYKONAJ</button></div>
           </div>
         </div>
       `;
@@ -71,7 +315,6 @@
     }
 
     document.getElementById("oxy-confirm-msg").textContent = message;
-
     setTimeout(() => overlay.classList.remove("hidden"), 10);
 
     const btnYes = document.getElementById("oxy-confirm-yes");
@@ -93,9 +336,10 @@
   }
 
   // ==========================================
-  // 1. ZARZĄDZANIE STANEM, DANYMI I GRUPAMI
+  // ZARZĄDZANIE STANEM, DANYMI I GRUPAMI
   // ==========================================
   const STORAGE_KEY = "harmonogram_data";
+  const USERS_KEY = "oxy_os_users";
   const GITHUB_URL =
     "https://raw.githubusercontent.com/s-pro-v/json-lista/refs/heads/main/mobile-grafik.json";
 
@@ -150,18 +394,8 @@
   function findCurrentMonthIndex() {
     if (!appState.allMonths || appState.allMonths.length === 0) return 0;
     const polishMonths = [
-      "STYCZEN",
-      "LUTY",
-      "MARZEC",
-      "KWIECIEN",
-      "MAJ",
-      "CZERWIEC",
-      "LIPIEC",
-      "SIERPIEN",
-      "WRZESIEN",
-      "PAZDZIERNIK",
-      "LISTOPAD",
-      "GRUDZIEN",
+      "STYCZEN", "LUTY", "MARZEC", "KWIECIEN", "MAJ", "CZERWIEC",
+      "LIPIEC", "SIERPIEN", "WRZESIEN", "PAZDZIERNIK", "LISTOPAD", "GRUDZIEN",
     ];
     const currentMonthName = polishMonths[new Date().getMonth()];
 
@@ -171,15 +405,7 @@
         .toUpperCase()
         .replace(/[ĄĆĘŁŃÓŚŹŻ]/g, (match) => {
           const map = {
-            Ą: "A",
-            Ć: "C",
-            Ę: "E",
-            Ł: "L",
-            Ń: "N",
-            Ó: "O",
-            Ś: "S",
-            Ź: "Z",
-            Ż: "Z",
+            Ą: "A", Ć: "C", Ę: "E", Ł: "L", Ń: "N", Ó: "O", Ś: "S", Ź: "Z", Ż: "Z",
           };
           return map[match] || match;
         });
@@ -198,13 +424,13 @@
         } else if (parsed.meta && parsed.workers) {
           appState.allMonths = [parsed];
         } else {
-          throw new Error("Zła struktura");
+          throw new Error("Nieprawidłowa struktura danych");
         }
       } else {
         appState.allMonths = DEFAULT_JSON;
       }
     } catch (e) {
-      console.warn("Wyrzucono uszkodzony cache.");
+      console.warn("Wyrzucono uszkodzony cache lokalny.");
       appState.allMonths = DEFAULT_JSON;
       localStorage.removeItem(STORAGE_KEY);
     }
@@ -213,7 +439,500 @@
   }
 
   // ==========================================
-  // 2. LOGIKA ZAKŁADEK I EDYTORA
+  // ZARZĄDZANIE KONTAMI I UNIKALNYMI HASŁAMI
+  // ==========================================
+  function generateUniquePass(firstName, workerId, fallbackIdx, currentUsers) {
+    const cleanFirst = (firstName || "Pracownik").trim().split(" ")[0];
+    const idPart = workerId != null ? workerId : fallbackIdx + 1;
+    let candidate = `${cleanFirst}${idPart}`;
+    let counter = 1;
+
+    while (
+      currentUsers.some(
+        (u) => u.pass && u.pass.toLowerCase() === candidate.toLowerCase()
+      )
+    ) {
+      candidate = `${cleanFirst}${idPart}_${counter}`;
+      counter++;
+    }
+    return candidate;
+  }
+
+  function cleanupDuplicatePasswords() {
+    const users = JSON.parse(localStorage.getItem(USERS_KEY) || "[]");
+    const passMap = new Set();
+    let modified = false;
+
+    users.forEach((u, idx) => {
+      if (u.user === "admin") {
+        passMap.add(u.pass.toLowerCase());
+        return;
+      }
+
+      const lowerPass = (u.pass || "").toLowerCase();
+      if (!lowerPass || passMap.has(lowerPass)) {
+        const base = (u.user || "Pracownik").split("_")[0];
+        u.pass = generateUniquePass(
+          base,
+          u.workerId,
+          idx,
+          users.filter((_, i) => i !== idx)
+        );
+        modified = true;
+      }
+      passMap.add(u.pass.toLowerCase());
+    });
+
+    if (modified) {
+      localStorage.setItem(USERS_KEY, JSON.stringify(users));
+    }
+  }
+
+  function syncUsersFromSchedule(silent = false) {
+    const users = JSON.parse(localStorage.getItem(USERS_KEY) || "[]");
+    let addedCount = 0;
+
+    appState.allMonths.forEach((m) => {
+      if (!m.workers || !Array.isArray(m.workers)) return;
+
+      m.workers.forEach((w, wIdx) => {
+        if (!w.name || w.name.trim() === "" || w.name === "Przykład") return;
+
+        const username = w.name.trim().replace(/\s+/g, "_");
+        const exists = users.find(
+          (u) => u.user.toLowerCase() === username.toLowerCase()
+        );
+
+        if (!exists) {
+          const firstName = w.name.trim().split(" ")[0];
+          const uniquePass = generateUniquePass(firstName, w.id, wIdx, users);
+
+          users.push({
+            user: username,
+            pass: uniquePass,
+            workerId: w.id || null,
+            role: "worker",
+          });
+          addedCount++;
+        } else if (w.id != null && exists.workerId == null) {
+          exists.workerId = w.id;
+        }
+      });
+    });
+
+    if (addedCount > 0) {
+      localStorage.setItem(USERS_KEY, JSON.stringify(users));
+      renderUsersModalList();
+      if (!silent) {
+        oxyAlert(
+          `Utworzono ${addedCount} kont z unikalnymi hasłami (format: [Imię][ID]).`,
+          "success",
+          "SYNCHRONIZACJA KONT"
+        );
+      }
+    } else if (!silent) {
+      oxyAlert(
+        "Wszyscy pracownicy posiadają już wygenerowane unikalne hasła.",
+        "info",
+        "SYNCHRONIZACJA"
+      );
+    }
+  }
+
+  function renderUsersModalList() {
+    const listEl = document.getElementById("users-list");
+    if (!listEl) return;
+    const users = JSON.parse(localStorage.getItem(USERS_KEY) || "[]");
+    listEl.innerHTML = "";
+
+    users.forEach((u, idx) => {
+      const isAdmin = u.user === "admin";
+      const row = document.createElement("div");
+      row.className = "user-item-chassis";
+
+      row.innerHTML = `
+        <div class="user-item-main">
+          <div class="user-item-identity">
+            <i class="fas ${isAdmin ? "fa-shield-halved text-highlight" : "fa-user text-muted"}"></i>
+            <div class="user-item-details">
+              <span class="user-item-name">${u.user}</span>
+              <span class="user-item-role">${isAdmin
+          ? "GŁÓWNY ADMIN"
+          : u.role === "worker"
+            ? `PRACOWNIK (ID: ${u.workerId != null ? u.workerId : idx + 1})`
+            : "UŻYTKOWNIK"
+        }</span>
+            </div>
+          </div>
+
+          <div class="user-item-creds" title="Kliknij, aby skopiować unikalne hasło" data-copy-pass="${u.pass}">
+            <span class="creds-label">UNIKALNE HASŁO:</span>
+            <code class="creds-val">${u.pass}</code>
+            <i class="fas fa-copy creds-copy-icon"></i>
+          </div>
+        </div>
+
+        <div class="user-item-actions">
+          <div class="btn-bg">
+            <button type="button" class="btn btn-login-as" data-username="${u.user}" title="Zaloguj na to konto">
+              <i class="fas fa-right-to-bracket"></i>
+              <span class="btn-text">ZALOGUJ</span>
+            </button>
+          </div>
+
+          ${isAdmin
+          ? `<div class="admin-locked-badge" title="Konto systemowe"><i class="fas fa-lock"></i></div>`
+          : `<div class="btn-bg">
+                   <button type="button" class="btn btn-icon delete-user-btn" data-idx="${idx}" title="Usuń konto">
+                     <i class="fas fa-trash"></i>
+                   </button>
+                 </div>`
+        }
+        </div>
+      `;
+
+      listEl.appendChild(row);
+    });
+  }
+
+  function initUserManagementModal() {
+    if (!localStorage.getItem(USERS_KEY)) {
+      localStorage.setItem(
+        USERS_KEY,
+        JSON.stringify([{ user: "admin", pass: "admin123", role: "admin" }])
+      );
+    }
+    cleanupDuplicatePasswords();
+
+    const modalUsers = document.getElementById("users-modal-overlay");
+    const btnCloseUsers = document.getElementById("users-modal-close");
+    const btnOpenUsers = document.getElementById("btn-users");
+    const btnSyncUsers = document.getElementById("btn-sync-users");
+    const btnAdd = document.getElementById("btn-add-user");
+    const listEl = document.getElementById("users-list");
+
+    if (btnOpenUsers) {
+      btnOpenUsers.addEventListener("click", () => {
+        if (sessionStorage.getItem("oxy_os_user") !== "admin") return;
+        renderUsersModalList();
+        modalUsers.classList.add("active");
+      });
+    }
+
+    if (btnCloseUsers && modalUsers) {
+      btnCloseUsers.addEventListener("click", () =>
+        modalUsers.classList.remove("active")
+      );
+      modalUsers.addEventListener("click", (e) => {
+        if (e.target === modalUsers) modalUsers.classList.remove("active");
+      });
+    }
+
+    if (btnSyncUsers) {
+      btnSyncUsers.addEventListener("click", () => syncUsersFromSchedule(false));
+    }
+
+    if (btnAdd) {
+      btnAdd.addEventListener("click", () => {
+        const uInp = document.getElementById("new-username");
+        const pInp = document.getElementById("new-password");
+        const uVal = uInp.value.trim().replace(/\s+/g, "_");
+        const pVal = pInp.value.trim();
+
+        if (!uVal || !pVal) {
+          oxyAlert("Wprowadź nazwę użytkownika oraz hasło.", "warning", "BRAK DANYCH");
+          return;
+        }
+
+        const users = JSON.parse(localStorage.getItem(USERS_KEY) || "[]");
+        if (users.find((u) => u.user.toLowerCase() === uVal.toLowerCase())) {
+          oxyAlert("Użytkownik o takiej nazwie już istnieje w bazie.", "error", "DUPLIKAT LOGINU");
+          return;
+        }
+
+        if (users.find((u) => u.pass.toLowerCase() === pVal.toLowerCase())) {
+          oxyAlert("To hasło jest już przypisane do innego konta. Każde hasło musi być unikalne.", "error", "DUPLIKAT HASŁA");
+          return;
+        }
+
+        users.push({ user: uVal, pass: pVal, role: "custom" });
+        localStorage.setItem(USERS_KEY, JSON.stringify(users));
+        uInp.value = "";
+        pInp.value = "";
+        renderUsersModalList();
+        oxyAlert(`Utworzono konto dla "${uVal}" z unikalnym hasłem.`, "success", "NOWY UŻYTKOWNIK");
+      });
+    }
+
+    if (listEl) {
+      listEl.addEventListener("click", (e) => {
+        const loginBtn = e.target.closest(".btn-login-as");
+        if (loginBtn) {
+          const targetUser = loginBtn.dataset.username;
+          sessionStorage.setItem("oxy_os_user", targetUser);
+          if (modalUsers) modalUsers.classList.remove("active");
+          renderLoginScreen();
+          renderSchedule();
+          oxyAlert(`Zalogowano jako: <strong>${targetUser}</strong>`, "success", "AUTORYZACJA");
+          return;
+        }
+
+        const copyBadge = e.target.closest("[data-copy-pass]");
+        if (copyBadge) {
+          const pass = copyBadge.getAttribute("data-copy-pass");
+          navigator.clipboard.writeText(pass).then(() => {
+            oxyAlert(`Skopiowano unikalne hasło: <code>${pass}</code>`, "info", "SCHOWEK");
+          });
+          return;
+        }
+
+        const deleteBtn = e.target.closest(".delete-user-btn");
+        if (deleteBtn) {
+          const idx = parseInt(deleteBtn.dataset.idx, 10);
+          const users = JSON.parse(localStorage.getItem(USERS_KEY) || "[]");
+
+          if (users[idx].user === "admin") {
+            oxyAlert("Konta 'admin' nie można usunąć.", "error", "ODMOWA DOSTĘPU");
+            return;
+          }
+
+          oxyConfirm(
+            `Czy na pewno chcesz bezpowrotnie usunąć konto "${users[idx].user}"?`,
+            () => {
+              users.splice(idx, 1);
+              localStorage.setItem(USERS_KEY, JSON.stringify(users));
+              renderUsersModalList();
+              oxyAlert("Konto użytkownika zostało usunięte.", "info", "USUNIĘTO");
+            }
+          );
+        }
+      });
+    }
+  }
+
+  // ==========================================
+  // DYNAMICZNY RENDERER EKRANU LOGOWANIA
+  // ==========================================
+  function renderLoginScreen(mode = "quick_pass") {
+    let overlay = document.getElementById("login-overlay");
+    if (!overlay) {
+      overlay = document.createElement("div");
+      overlay.id = "login-overlay";
+      overlay.className = "login-overlay";
+      document.body.prepend(overlay);
+    }
+
+    const currentUser = sessionStorage.getItem("oxy_os_user");
+    const wrapper = document.querySelector(".dashboard-wrapper");
+    const btnUsers = document.getElementById("btn-users");
+    const btnCodeView = document.getElementById("btn-view-code");
+    const pageTitle = document.querySelector(".page-title");
+
+    if (currentUser) {
+      overlay.classList.add("hidden");
+      if (wrapper) wrapper.classList.remove("locked");
+
+      const isAdmin = currentUser === "admin";
+      if (btnUsers) btnUsers.style.display = isAdmin ? "flex" : "none";
+      if (btnCodeView) btnCodeView.style.display = isAdmin ? "inline-flex" : "none";
+      if (pageTitle) {
+        pageTitle.innerHTML = `Workspace <span class="tactile-badge active" style="margin-left:8px;font-size:10px;">${currentUser}</span>`;
+      }
+      return;
+    }
+
+    if (wrapper) wrapper.classList.add("locked");
+    overlay.classList.remove("hidden");
+    if (btnUsers) btnUsers.style.display = "none";
+    if (btnCodeView) btnCodeView.style.display = "none";
+
+    const currentMonth =
+      appState.allMonths && appState.allMonths[appState.activeMonthIdx]
+        ? appState.allMonths[appState.activeMonthIdx]
+        : null;
+    const workers =
+      currentMonth && currentMonth.workers
+        ? currentMonth.workers.filter(
+          (w) => w.name && w.name.trim() !== "" && w.name !== "Przykład"
+        )
+        : [];
+
+    overlay.innerHTML = `
+      <div class="login-box card hud-bracket" style="max-width: 420px; width: 95%;">
+        <!-- Pasek stanu HUD -->
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; border-bottom:1px solid var(--border-color); padding-bottom:0.5rem;">
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span class="led-indicator active" style="background:var(--highlight-color); box-shadow:0 0 8px var(--highlight-color);"></span>
+            <span style="font-family:var(--font-tech); font-size:11px; letter-spacing:0.1em; color:var(--text-muted);">SYS.AUTH_MODULE // v2.0</span>
+          </div>
+          <div class="btn-group tab-chassis" style="margin:0;">
+            <button type="button" id="tab-auth-pass" class="btn ${mode === "quick_pass" ? "active" : ""}" style="height:24px; min-width:65px; font-size:9px; padding:0 6px;">HASŁO</button>
+            <button type="button" id="tab-auth-admin" class="btn ${mode === "credentials" ? "active" : ""}" style="height:24px; min-width:65px; font-size:9px; padding:0 6px;">ADMIN</button>
+          </div>
+        </div>
+
+        <!-- Nagłówek -->
+        <div style="text-align:center; margin-bottom:1.25rem;">
+          <div style="width:42px; height:42px; margin:0 auto 0.5rem; display:flex; align-items:center; justify-content:center; background:var(--bg-tertiary); border:1px solid var(--border-color); box-shadow:var(--shadow-inset);">
+            <i class="fas fa-fingerprint" style="font-size:22px; color:var(--highlight-color);"></i>
+          </div>
+          <h2 class="card-title" style="font-size:1.1rem; margin:0;">AUTORYZACJA OXY_OS</h2>
+          <p style="font-size:11px; color:var(--text-muted); margin-top:3px;">
+            ${mode === "quick_pass" ? "Wprowadź unikalne hasło pracownika:" : "Wprowadź poświadczenia administratora:"}
+          </p>
+        </div>
+
+        <!-- Formularz w gniazdach chassis -->
+        <div class="login-input-group" style="gap:8px;">
+          ${mode === "credentials"
+        ? `
+            <div class="input-chassis">
+              <input type="text" id="login-username" class="shift-input login-input-field tactile-input" 
+                     placeholder="Login administratora..." autocomplete="off">
+            </div>
+          `
+        : ""
+      }
+
+          <div class="input-chassis">
+            <input type="password" id="login-password" class="shift-input login-input-field tactile-input" 
+                   placeholder="${mode === "quick_pass" ? "Unikalne hasło..." : "Hasło dostępu..."}" autocomplete="current-password">
+          </div>
+
+          <!-- Matryca szybkiego wyboru operatora (w trybie hasła) -->
+          ${mode === "quick_pass" && workers.length > 0
+        ? `
+            <div style="margin-top:4px;">
+              <div style="font-size:9px; text-transform:uppercase; color:var(--text-muted); margin-bottom:4px; font-family:var(--font-tech); display:flex; justify-content:space-between;">
+                <span>Wskaż profil pracownika:</span>
+                <span style="color:var(--highlight-color);">${workers.length} PROFILI</span>
+              </div>
+              <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(90px, 1fr)); gap:4px; max-height:95px; overflow-y:auto; padding:4px; background:var(--bg-color); border:1px solid var(--border-color); box-shadow:var(--shadow-inset);">
+                ${workers
+          .map(
+            (w) => `
+                  <button type="button" class="btn-worker-chip" data-worker="${w.name}" 
+                          style="padding:3px 6px; font-size:10px; font-family:var(--font-family); background:var(--bg-tertiary); border:1px solid var(--border-color); color:var(--text-color); text-align:left; cursor:pointer; text-overflow:ellipsis; overflow:hidden; white-space:nowrap;">
+                    <i class="fas fa-user" style="font-size:8px; opacity:0.5; margin-right:3px;"></i>${w.name.split(" ")[0]}
+                  </button>
+                `
+          )
+          .join("")}
+              </div>
+            </div>
+          `
+        : ""
+      }
+
+          <div class="btn-bg" style="width:100%; margin-top:6px;">
+            <button type="button" id="btn-submit-auth" class="btn active login-submit-btn" style="width:100%; height:38px;">
+              <i class="fas fa-right-to-bracket"></i> ZALOGUJ
+            </button>
+          </div>
+        </div>
+
+        <p id="login-error-badge" class="login-error-msg" style="display:none; text-align:center; margin-top:8px;"></p>
+      </div>
+    `;
+
+    const btnPassMode = document.getElementById("tab-auth-pass");
+    const btnAdminMode = document.getElementById("tab-auth-admin");
+    const btnSubmit = document.getElementById("btn-submit-auth");
+    const passInp = document.getElementById("login-password");
+    const userInp = document.getElementById("login-username");
+    const errBadge = document.getElementById("login-error-badge");
+
+    if (btnPassMode)
+      btnPassMode.addEventListener("click", () => renderLoginScreen("quick_pass"));
+    if (btnAdminMode)
+      btnAdminMode.addEventListener("click", () => renderLoginScreen("credentials"));
+
+    let selectedWorkerName = null;
+    overlay.querySelectorAll(".btn-worker-chip").forEach((chip) => {
+      chip.addEventListener("click", () => {
+        audio.playClick("normal");
+        selectedWorkerName = chip.dataset.worker;
+        overlay.querySelectorAll(".btn-worker-chip").forEach((c) => {
+          c.style.borderColor = "var(--border-color)";
+          c.style.color = "var(--text-color)";
+        });
+        chip.style.borderColor = "var(--highlight-color)";
+        chip.style.color = "var(--highlight-color)";
+        if (passInp) {
+          passInp.placeholder = `Hasło: ${selectedWorkerName.split(" ")[0]}...`;
+          passInp.focus();
+        }
+      });
+    });
+
+    const performLogin = () => {
+      const users = JSON.parse(localStorage.getItem(USERS_KEY) || "[]");
+      const passVal = passInp ? passInp.value.trim() : "";
+      const userVal = userInp ? userInp.value.trim() : "";
+
+      let matched = null;
+
+      if (mode === "credentials") {
+        matched = users.find(
+          (u) =>
+            u.user.toLowerCase() === userVal.toLowerCase() && u.pass === passVal
+        );
+      } else {
+        if (selectedWorkerName && passVal) {
+          const uKey = selectedWorkerName.replace(/\s+/g, "_").toLowerCase();
+          matched = users.find(
+            (u) => u.user.toLowerCase() === uKey && u.pass === passVal
+          );
+        }
+        if (!matched && passVal) {
+          matched = users.find((u) => u.pass === passVal);
+        }
+      }
+
+      if (matched) {
+        audio.playClick("heavy");
+        sessionStorage.setItem("oxy_os_user", matched.user);
+        renderLoginScreen();
+        renderSchedule();
+        oxyAlert(
+          `Zalogowano jako: <strong>${matched.user}</strong>`,
+          "success",
+          "AUTORYZACJA"
+        );
+      } else {
+        audio.playClick("switch");
+        if (errBadge) {
+          errBadge.textContent = "Odmowa autoryzacji: nieprawidłowe hasło.";
+          errBadge.style.display = "block";
+        }
+        const box = overlay.querySelector(".login-box");
+        if (box) {
+          box.classList.add("login-shake");
+          setTimeout(() => box.classList.remove("login-shake"), 350);
+        }
+        if (passInp) {
+          passInp.value = "";
+          passInp.focus();
+        }
+      }
+    };
+
+    if (btnSubmit) btnSubmit.addEventListener("click", performLogin);
+    [passInp, userInp].forEach((inp) => {
+      if (inp) {
+        inp.addEventListener("keydown", (e) => {
+          if (e.key === "Enter") performLogin();
+        });
+      }
+    });
+
+    setTimeout(() => {
+      if (passInp) passInp.focus();
+    }, 50);
+  }
+
+  // ==========================================
+  // LOGIKA ZAKŁADEK I EDYTORA
   // ==========================================
   function initTabsAndEditor() {
     const tabs = ["dashboard", "schedule", "code"];
@@ -253,6 +972,16 @@
         } catch (err) { }
       });
     }
+
+    const btnLogout = document.getElementById("btn-logout");
+    if (btnLogout) {
+      btnLogout.addEventListener("click", () => {
+        oxyConfirm("Czy na pewno chcesz zakończyć sesję operatora OXY_OS?", () => {
+          sessionStorage.removeItem("oxy_os_user");
+          renderLoginScreen();
+        });
+      });
+    }
   }
 
   function startClock() {
@@ -265,7 +994,7 @@
   }
 
   // ==========================================
-  // 3. RENDEROWANIE TABELI
+  // RENDEROWANIE TABELI GRAFIKU
   // ==========================================
   function renderSchedule() {
     const container = document.getElementById("schedule-content");
@@ -278,8 +1007,10 @@
 
     const currentTheme =
       document.documentElement.getAttribute("theme") || "dark";
+    const loggedUser = (sessionStorage.getItem("oxy_os_user") || "").toLowerCase();
+    const isAdmin = loggedUser === "admin";
 
-    let html = `<div class="month-controls">`;
+    let html = `<div class="month-controls tab-chassis" style="display:flex;">`;
     appState.allMonths.forEach((monthObj, idx) => {
       const monthName = monthObj.meta.month || `Miesiąc ${idx + 1}`;
       const isActive = idx === appState.activeMonthIdx;
@@ -322,12 +1053,22 @@
         rowStyle = `border-left: 3px solid ${themeColor}; color: ${themeColor};`;
       }
 
-      html += `<tr>
+      const workerUserKey = (w.name || "").trim().replace(/\s+/g, "_").toLowerCase();
+      const isCurrentLoggedWorker = loggedUser && loggedUser === workerUserKey;
+      const rowClass = isCurrentLoggedWorker ? ' class="active-row"' : "";
+      const nameHighlight = isCurrentLoggedWorker
+        ? ' style="color:var(--highlight-color); font-weight:700;"'
+        : "";
+
+      html += `<tr${rowClass}>
                 <td class="sticky-col">${w.id != null ? w.id : wIdx + 1}</td>
                 <td class="sticky-col-2 worker-name-cell" data-w="${wIdx}" style="cursor: pointer; padding:0 10px; font-weight:600; font-size:12px; background:var(--card-bg); border-bottom:1px solid var(--border-color); ${rowStyle}" title="Kliknij, aby zobaczyć kalendarz pracownika">
                   <div style="display: flex; align-items: center; justify-content: space-between;">
-                    <span>${w.name || "Brak"}</span>
-                    <i class="fas fa-calendar-alt" style="opacity: 0.3;"></i>
+                    <span${nameHighlight}>${w.name || "Brak"}</span>
+                    <i class="fas fa-calendar-alt" style="${isCurrentLoggedWorker
+          ? "color:var(--highlight-color); opacity:1;"
+          : "opacity: 0.3;"
+        }"></i>
                   </div>
                 </td>`;
 
@@ -345,9 +1086,16 @@
           ? "background-color: rgba(243, 108, 0, 0.05);"
           : "";
 
+        const canEdit = isAdmin || isCurrentLoggedWorker;
+        const disabledAttr = canEdit ? "" : "readonly";
+
         html += `<td class="shift-cell" style="${bgStyle}">
-                  <input type="text" class="shift-input" data-w="${wIdx}" data-s="${dIdx}" value="${displayCode}">
-                 </td>`;
+                  <input type="text" class="shift-input grid-chassis-input" 
+                         data-w="${wIdx}" data-s="${dIdx}" 
+                         value="${displayCode}" 
+                         ${disabledAttr}
+                         style="${canEdit ? "" : "cursor:default;opacity:0.85;"}">
+                </td>`;
       });
 
       html += `<td class="sum-cell">${totalHours}h</td></tr>`;
@@ -401,33 +1149,7 @@
           openWorkerCalendarModal(wIdx);
         }
       });
-      cell.addEventListener("mouseenter", (e) => {
-        e.currentTarget.style.filter = "brightness(1.5)";
-      });
-      cell.addEventListener("mouseleave", (e) => {
-        e.currentTarget.style.filter = "none";
-      });
     });
-
-    const monthSelect = document.querySelector(".year-selector");
-    if (monthSelect) {
-      monthSelect.innerHTML = "";
-      appState.allMonths.forEach((monthObj, idx) => {
-        const monthName = monthObj.meta.month || `Miesiąc ${idx + 1}`;
-        const option = document.createElement("option");
-        option.value = idx;
-        option.textContent = monthName;
-        if (idx === appState.activeMonthIdx) option.selected = true;
-        monthSelect.appendChild(option);
-      });
-
-      const newSelect = monthSelect.cloneNode(true);
-      monthSelect.parentNode.replaceChild(newSelect, monthSelect);
-      newSelect.addEventListener("change", (e) => {
-        appState.activeMonthIdx = parseInt(e.target.value);
-        renderSchedule();
-      });
-    }
 
     syncDashboardCharts();
   }
@@ -445,11 +1167,9 @@
       <div class="shift-modal-content" style="max-width: 750px;">
         <div class="shift-modal-header">
           <h3 class="shift-modal-title" id="worker-cal-title">Kalendarz</h3>
-          <button id="worker-cal-close" class="shift-modal-close">&times;</button>
+          <div class="chassis-socket"><button id="worker-cal-close" class="shift-modal-close">&times;</button></div>
         </div>
-        <div id="worker-cal-body" class="shift-modal-body" style="flex-direction: column;">
-          <!-- Zawartość kalendarza -->
-        </div>
+        <div id="worker-cal-body" class="shift-modal-body" style="flex-direction: column;"></div>
       </div>
     `;
     document.body.appendChild(modal);
@@ -594,11 +1314,9 @@
       <div class="shift-modal-content">
         <div class="shift-modal-header">
           <h3 class="shift-modal-title" id="shift-modal-title">Obsada Zmianowa</h3>
-          <button id="shift-modal-close" class="shift-modal-close">&times;</button>
+          <div class="chassis-socket"><button id="shift-modal-close" class="shift-modal-close">&times;</button></div>
         </div>
-        <div id="shift-modal-body" class="shift-modal-body">
-          <!-- Zawartość -->
-        </div>
+        <div id="shift-modal-body" class="shift-modal-body"></div>
       </div>
     `;
     document.body.appendChild(modal);
@@ -626,7 +1344,6 @@
     const todayIdx = daysArr.indexOf(todayStr);
 
     let targetIdx = typeof eOrIdx === "number" ? eOrIdx : todayIdx;
-
     if (targetIdx === -1 || targetIdx >= daysArr.length) {
       targetIdx = 0;
     }
@@ -637,31 +1354,63 @@
       return;
     }
 
-    let selectorHtml = `
-      <div class="modal-day-controls">
-        <button id="modal-prev-day" class="btn modal-nav-btn" title="Poprzedni dzień"><i class="fas fa-chevron-left"></i></button>
-        <select id="modal-day-selector" class="shift-input modal-day-select">`;
+    let customSelectOptions = "";
     daysArr.forEach((d, i) => {
       const wd = weekdaysArr[i] || "";
-      const isSelected = i === targetIdx ? "selected" : "";
-      selectorHtml += `<option value="${i}" ${isSelected}>Dzień ${d} (${wd})</option>`;
+      const isSelected = i === targetIdx ? " selected" : "";
+      const ariaSelected = i === targetIdx ? "true" : "false";
+      customSelectOptions += `
+        <div class="option${isSelected}" data-value="${i}" role="option" aria-selected="${ariaSelected}">
+            <i class="fa-solid fa-calendar-day"></i>
+            <span>Dzień ${d} (${wd})</span>
+        </div>`;
     });
-    selectorHtml += `</select>
-        <button id="modal-next-day" class="btn modal-nav-btn" title="Następny dzień"><i class="fas fa-chevron-right"></i></button>
+
+    let currentSelectedText =
+      targetIdx >= 0 && targetIdx < daysArr.length
+        ? `Dzień ${daysArr[targetIdx]} (${weekdaysArr[targetIdx] || ""})`
+        : "Wybierz dzień...";
+
+    let selectorHtml = `
+      <div class="modal-day-controls">
+        <div class="btn-bg">
+            <button id="modal-prev-day" class="btn modal-nav-btn" title="Poprzedni dzień"><i class="fas fa-chevron-left"></i></button>
+        </div>
+        <div class="custom-select wide" id="modal-day-selector-custom" data-name="modalDay">
+            <input type="hidden" name="modalDay" value="${targetIdx}">
+            <div class="select-chassis">
+                <button type="button" class="select-trigger" aria-haspopup="listbox" aria-expanded="false">
+                    <span class="trigger-content">
+                        <i class="fa-solid fa-calendar-day"></i>
+                        <span>${currentSelectedText}</span>
+                    </span>
+                    <i class="fa-solid fa-chevron-down chevron-icon"></i>
+                </button>
+            </div>
+            <div class="select-options" role="listbox">
+                ${customSelectOptions}
+            </div>
+        </div>
+        <div class="btn-bg">
+            <button id="modal-next-day" class="btn modal-nav-btn" title="Następny dzień"><i class="fas fa-chevron-right"></i></button>
+        </div>
       </div>`;
 
-    title.innerHTML = `<i class="fas fa-users" style="color: var(--highlight-color); margin-right: 8px;"></i> Obsada: ${selectorHtml}`;
+    title.innerHTML = `<div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+        <div><i class="fas fa-users" style="color: var(--highlight-color); margin-right: 8px;"></i> Obsada</div>
+        ${selectorHtml}
+    </div>`;
 
     setTimeout(() => {
-      const selector = document.getElementById("modal-day-selector");
-      const btnPrev = document.getElementById("modal-prev-day");
-      const btnNext = document.getElementById("modal-next-day");
-
-      if (selector) {
-        selector.addEventListener("change", (e) => {
-          openShiftListModal(parseInt(e.target.value));
+      const customSelectElement = document.getElementById("modal-day-selector-custom");
+      if (customSelectElement) {
+        new CustomSelect(customSelectElement, (data) => {
+          openShiftListModal(parseInt(data.value));
         });
       }
+
+      const btnPrev = document.getElementById("modal-prev-day");
+      const btnNext = document.getElementById("modal-next-day");
 
       if (btnPrev) {
         btnPrev.addEventListener("click", () => {
@@ -733,7 +1482,7 @@
   }
 
   // ==========================================
-  // 4. WYKRESY I WIDŻETY
+  // WYKRESY I STATYSTYKI DASHBOARDU
   // ==========================================
   let charts = {};
 
@@ -747,13 +1496,10 @@
 
     const mainStatsEl = document.getElementById("mainStatsChart");
     if (mainStatsEl) {
-      const cardTitle = mainStatsEl
-        .closest(".card")
-        ?.querySelector(".card-title");
+      const cardTitle = mainStatsEl.closest(".card")?.querySelector(".card-title");
       if (cardTitle) cardTitle.textContent = "Rozkład Godzin Pracowników";
 
       const ctxMain = mainStatsEl.getContext("2d");
-
       let gradientMain = ctxMain.createLinearGradient(0, 0, 0, 300);
       gradientMain.addColorStop(0, "rgba(220, 38, 38, 0.45)");
       gradientMain.addColorStop(0.5, "rgba(243, 108, 0, 0.45)");
@@ -825,12 +1571,7 @@
             {
               data: [0],
               backgroundColor: [
-                "#f36c00",
-                "#3b82f6",
-                "#af5308",
-                "#ffc107",
-                "#17a2b8",
-                "#28a745",
+                "#f36c00", "#3b82f6", "#af5308", "#ffc107", "#17a2b8", "#28a745"
               ],
             },
           ],
@@ -862,7 +1603,6 @@
         legendOut.innerHTML = '<span class="legend-dot bg-red"></span> Noc';
 
       const ctx = waveEl.getContext("2d");
-
       let gradientDay = ctx.createLinearGradient(0, 0, 0, 300);
       gradientDay.addColorStop(0, "rgba(255, 255, 255, 0.04)");
       gradientDay.addColorStop(1, "rgba(0, 210, 255, 0.0)");
@@ -1057,8 +1797,7 @@
       const trendEl = widget2Card.querySelector(".widget-trend");
       const iconWrap = widget2Card.querySelector(".widget-icon");
 
-      if (wAmt)
-        wAmt.innerHTML = `${nightToday} <span class="cents">osób</span>`;
+      if (wAmt) wAmt.innerHTML = `${nightToday} <span class="cents">osób</span>`;
       if (wLbl) wLbl.innerText = "Nocka (Dziś)";
 
       if (iconWrap) {
@@ -1242,7 +1981,7 @@
   }
 
   // ==========================================
-  // 5. OBSŁUGA GITHUB I THEME
+  // SYNCHRONIZACJA Z GITHUB & MOTYW
   // ==========================================
   const btnCloud =
     document.getElementById("btn-cloud-fetch") ||
@@ -1276,11 +2015,7 @@
 
         appState.activeMonthIdx = findCurrentMonthIndex();
         renderSchedule();
-
-        // Automatyczna synchronizacja kont po wczytaniu nowych danych z chmury
-        if (typeof window.syncUsersFromSchedule === "function") {
-          window.syncUsersFromSchedule(true);
-        }
+        syncUsersFromSchedule(true);
 
         if (iconDest && typeof AppIcons !== "undefined") {
           iconDest.innerHTML = AppIcons.circleCheck || "";
@@ -1289,16 +2024,12 @@
           }, 2000);
         }
 
-        oxyAlert(
-          "Pobrano najnowsze dane z chmury.",
-          "success",
-          "SYNCHRONIZACJA",
-        );
+        oxyAlert("Pobrano najnowsze dane z chmury.", "success", "SYNCHRONIZACJA");
       } catch (e) {
         oxyAlert(
           "Błąd chmury: " + (e && e.message ? e.message : e),
           "error",
-          "BŁĄD POBIERANIA",
+          "BŁĄD POBIERANIA"
         );
 
         if (iconDest && typeof AppIcons !== "undefined") {
@@ -1321,8 +2052,6 @@
         : AppIcons.brightnessIncrease || "";
     }
 
-    window.getComputedStyle(document.documentElement).cssText;
-
     if (typeof Chart !== "undefined") {
       Chart.defaults.color =
         getComputedStyle(document.documentElement)
@@ -1338,278 +2067,7 @@
   });
 
   // ==========================================
-  // ZARZĄDZANIE UŻYTKOWNIKAMI I LOGOWANIE
-  // ==========================================
-  function initLoginSystem() {
-    const USERS_KEY = "oxy_os_users";
-
-    if (!localStorage.getItem(USERS_KEY)) {
-      localStorage.setItem(
-        USERS_KEY,
-        JSON.stringify([{ user: "admin", pass: "admin123", role: "admin" }]),
-      );
-    }
-
-    const loginOverlay = document.getElementById("login-overlay");
-    const dashboardWrapper = document.querySelector(".dashboard-wrapper");
-    const btnLogin = document.getElementById("btn-login");
-    const userInput = document.getElementById("login-username");
-    const passInput = document.getElementById("login-password");
-    const errorMsg = document.getElementById("login-error");
-    const btnOpenUsers = document.getElementById("btn-users");
-    const btnSyncUsers = document.getElementById("btn-sync-users");
-
-    function applyUserPermissions(loggedUser) {
-      if (btnOpenUsers) {
-        btnOpenUsers.style.display = loggedUser === "admin" ? "flex" : "none";
-      }
-    }
-
-    const currentUser = sessionStorage.getItem("oxy_os_user");
-    if (currentUser) {
-      if (loginOverlay) loginOverlay.classList.add("hidden");
-      if (dashboardWrapper) dashboardWrapper.classList.remove("locked");
-      applyUserPermissions(currentUser);
-    } else {
-      if (dashboardWrapper) dashboardWrapper.classList.add("locked");
-      if (btnOpenUsers) btnOpenUsers.style.display = "none";
-    }
-
-    function attemptLogin() {
-      const users = JSON.parse(localStorage.getItem(USERS_KEY) || "[]");
-      const userVal = userInput.value.trim();
-      const passVal = passInput.value;
-
-      const validUser = users.find(
-        (u) => u.user.toLowerCase() === userVal.toLowerCase() && u.pass === passVal,
-      );
-
-      if (validUser) {
-        sessionStorage.setItem("oxy_os_user", validUser.user);
-
-        loginOverlay.classList.add("hidden");
-        dashboardWrapper.classList.remove("locked");
-        errorMsg.style.display = "none";
-
-        applyUserPermissions(validUser.user);
-        oxyAlert(
-          `Witaj, ${validUser.user}! Pomyślnie zalogowano.`,
-          "success",
-          "AUTORYZACJA",
-        );
-      } else {
-        errorMsg.style.display = "block";
-        passInput.value = "";
-        passInput.focus();
-        oxyAlert(
-          "Odmowa dostępu. Nieprawidłowy login lub hasło.",
-          "error",
-          "AUTORYZACJA",
-        );
-      }
-    }
-
-    if (btnLogin) btnLogin.addEventListener("click", attemptLogin);
-    if (passInput)
-      passInput.addEventListener("keypress", (e) => {
-        if (e.key === "Enter") attemptLogin();
-      });
-    if (userInput)
-      userInput.addEventListener("keypress", (e) => {
-        if (e.key === "Enter") passInput.focus();
-      });
-
-    const btnLogout = document.getElementById("btn-logout");
-    if (btnLogout) {
-      btnLogout.addEventListener("click", () => {
-        oxyConfirm("Czy na pewno chcesz się wylogować z sesji OXY_OS?", () => {
-          sessionStorage.removeItem("oxy_os_user");
-          window.location.reload();
-        });
-      });
-    }
-
-    const modalUsers = document.getElementById("users-modal-overlay");
-    const btnCloseUsers = document.getElementById("users-modal-close");
-    const listEl = document.getElementById("users-list");
-    const btnAdd = document.getElementById("btn-add-user");
-
-    // Generowanie i synchronizacja kont z bazy pracowników w grafiku
-    function syncUsersFromSchedule(silent = false) {
-      const users = JSON.parse(localStorage.getItem(USERS_KEY) || "[]");
-      let addedCount = 0;
-
-      appState.allMonths.forEach((m) => {
-        if (!m.workers || !Array.isArray(m.workers)) return;
-
-        m.workers.forEach((w) => {
-          if (!w.name || w.name.trim() === "" || w.name === "Przykład") return;
-
-          const username = w.name.trim().replace(/\s+/g, "_");
-          const exists = users.some(
-            (u) => u.user.toLowerCase() === username.toLowerCase(),
-          );
-
-          if (!exists) {
-            const firstName = w.name.trim().split(" ")[0];
-            const defaultPass = `${firstName}123`;
-
-            users.push({
-              user: username,
-              pass: defaultPass,
-              workerId: w.id || null,
-              role: "worker",
-            });
-            addedCount++;
-          }
-        });
-      });
-
-      if (addedCount > 0) {
-        localStorage.setItem(USERS_KEY, JSON.stringify(users));
-        renderUsers();
-        if (!silent) {
-          oxyAlert(
-            `Utworzono ${addedCount} nowych kont pracowników. Domyślne hasło to: [Imię]123`,
-            "success",
-            "SYNCHRONIZACJA KONT",
-          );
-        }
-      } else if (!silent) {
-        oxyAlert(
-          "Wszyscy pracownicy z grafiku posiadają już utworzone konta.",
-          "info",
-          "SYNCHRONIZACJA",
-        );
-      }
-    }
-
-    function renderUsers() {
-      if (!listEl) return;
-      const users = JSON.parse(localStorage.getItem(USERS_KEY) || "[]");
-      listEl.innerHTML = "";
-      users.forEach((u, idx) => {
-        const row = document.createElement("div");
-        row.style.cssText =
-          "display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: var(--card-bg); border: 1px solid var(--border-color);";
-
-        const deleteBtnHtml =
-          u.user === "admin"
-            ? `<span style="font-size: 10px; color: var(--text-muted); font-weight: bold;">GŁÓWNY ADMIN</span>`
-            : `<div style="display:flex; align-items:center; gap:8px;">
-                 <span style="font-size: 11px; color: var(--text-muted); font-family: monospace;">hasło: ${u.pass}</span>
-                 <button class="icon-btn delete-user-btn" data-idx="${idx}" style="width: 28px; height: 28px; border-color: transparent;"><i class="fas fa-trash" style="color: var(--danger-color); pointer-events: none;"></i></button>
-               </div>`;
-
-        row.innerHTML = `
-          <div style="display:flex; align-items:center; gap:8px;">
-            <i class="fas ${u.user === "admin" ? "fa-shield-halved" : "fa-user"}" style="color: ${u.user === "admin" ? "var(--highlight-color)" : "var(--text-muted)"};"></i>
-            <span style="font-weight: 600; font-size: 13px;">${u.user}</span>
-          </div>
-          ${deleteBtnHtml}
-        `;
-        listEl.appendChild(row);
-      });
-    }
-
-    if (btnSyncUsers) {
-      btnSyncUsers.addEventListener("click", () => syncUsersFromSchedule(false));
-    }
-
-    if (listEl) {
-      listEl.addEventListener("click", (e) => {
-        const btn = e.target.closest(".delete-user-btn");
-        if (btn) {
-          const idx = parseInt(btn.dataset.idx);
-          const users = JSON.parse(localStorage.getItem(USERS_KEY) || "[]");
-
-          if (users[idx].user === "admin") {
-            oxyAlert(
-              "Konta 'admin' nie można usunąć.",
-              "error",
-              "ODMOWA DOSTĘPU",
-            );
-            return;
-          }
-
-          oxyConfirm(
-            `Czy na pewno chcesz bezpowrotnie usunąć konto "${users[idx].user}"?`,
-            () => {
-              users.splice(idx, 1);
-              localStorage.setItem(USERS_KEY, JSON.stringify(users));
-              renderUsers();
-              oxyAlert(
-                "Konto użytkownika zostało usunięte.",
-                "info",
-                "USUNIĘTO",
-              );
-            },
-          );
-        }
-      });
-    }
-
-    if (btnAdd) {
-      btnAdd.addEventListener("click", () => {
-        const uInp = document.getElementById("new-username");
-        const pInp = document.getElementById("new-password");
-        const uVal = uInp.value.trim().replace(/\s+/g, "_");
-        const pVal = pInp.value.trim();
-
-        if (!uVal || !pVal) {
-          oxyAlert(
-            "Wprowadź prawidłową nazwę użytkownika oraz hasło.",
-            "warning",
-            "BRAK DANYCH",
-          );
-          return;
-        }
-
-        const users = JSON.parse(localStorage.getItem(USERS_KEY) || "[]");
-        if (users.find((u) => u.user.toLowerCase() === uVal.toLowerCase())) {
-          oxyAlert(
-            "Użytkownik o takiej nazwie już istnieje w bazie danych.",
-            "error",
-            "DUPLIKAT",
-          );
-          return;
-        }
-
-        users.push({ user: uVal, pass: pVal, role: "custom" });
-        localStorage.setItem(USERS_KEY, JSON.stringify(users));
-        uInp.value = "";
-        pInp.value = "";
-        renderUsers();
-        oxyAlert(
-          `Konto dla "${uVal}" zostało utworzone.`,
-          "success",
-          "NOWY UŻYTKOWNIK",
-        );
-      });
-    }
-
-    if (btnOpenUsers) {
-      btnOpenUsers.addEventListener("click", () => {
-        if (sessionStorage.getItem("oxy_os_user") !== "admin") return;
-        renderUsers();
-        modalUsers.classList.add("active");
-      });
-    }
-
-    if (btnCloseUsers)
-      btnCloseUsers.addEventListener("click", () =>
-        modalUsers.classList.remove("active"),
-      );
-    if (modalUsers)
-      modalUsers.addEventListener("click", (e) => {
-        if (e.target === modalUsers) modalUsers.classList.remove("active");
-      });
-
-    window.syncUsersFromSchedule = syncUsersFromSchedule;
-  }
-
-  // ==========================================
-  // 6. PWA SERVICE WORKER, OFFLINE & INSTALL
+  // PWA SERVICE WORKER, OFFLINE & INSTALACJA
   // ==========================================
   function initPWA() {
     if ("serviceWorker" in navigator) {
@@ -1633,7 +2091,7 @@
       oxyAlert(
         "Praca w trybie lokalnym. Zmiany są zapisywane w pamięci urządzenia.",
         "warning",
-        "TRYB OFFLINE",
+        "TRYB OFFLINE"
       );
     });
 
@@ -1666,20 +2124,16 @@
     }
 
     window.addEventListener("appinstalled", () => {
-      oxyAlert(
-        "Aplikacja OXY_OS została pomyślnie zainstalowana.",
-        "success",
-        "GOTOWE",
-      );
+      oxyAlert("Aplikacja OXY_OS została zainstalowana.", "success", "GOTOWE");
       if (pwaInstallBtn) pwaInstallBtn.style.display = "none";
     });
   }
 
   // ==========================================
-  // INICJALIZACJA STARTOWA
+  // GŁÓWNY PUNKT STARTOWY APLIKACJI (BOOT)
   // ==========================================
   function bootApplication() {
-    initLoginSystem();
+    initUserManagementModal();
     initPWA();
 
     document.documentElement.setAttribute("theme", "dark");
@@ -1705,10 +2159,8 @@
     startClock();
     renderSchedule();
 
-    // Jednorazowe wstępne utworzenie kont przy pierwszym uruchomieniu
-    if (typeof window.syncUsersFromSchedule === "function") {
-      window.syncUsersFromSchedule(true);
-    }
+    syncUsersFromSchedule(true);
+    renderLoginScreen();
   }
 
   if (document.readyState === "loading") {
@@ -1717,3 +2169,63 @@
     bootApplication();
   }
 })();
+
+// Globalny odsłuch kliknięć dla dźwięków taktylnych
+document.addEventListener("click", (e) => {
+  const btn = e.target.closest("button, .btn, .icon-btn");
+  if (btn && !btn.classList.contains("select-trigger")) {
+    const audioInstance = window.audio || null;
+    if (audioInstance && audioInstance.playClick) {
+      audioInstance.playClick("normal");
+    }
+  }
+});
+
+const performLogin = async () => {
+  const passVal = passInp ? passInp.value.trim() : "";
+  const userVal = userInp ? userInp.value.trim() : "";
+
+  btnSubmit.innerHTML = '<i class="fas fa-spinner fa-spin"></i> WERYFIKACJA...';
+  btnSubmit.disabled = true;
+
+  try {
+    const response = await fetch("/api/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        login: mode === "credentials" ? userVal : (selectedWorkerName ? selectedWorkerName.replace(/\s+/g, "_") : ""),
+        password: passVal
+      })
+    });
+
+    const data = await response.json();
+
+    if (data.success) {
+      audio.playClick("heavy");
+      sessionStorage.setItem("oxy_os_user", data.user.username);
+      renderLoginScreen();
+      renderSchedule();
+      oxyAlert(`Zalogowano pomyślnie jako: <strong>${data.user.username}</strong>`, "success", "AUTORYZACJA");
+    } else {
+      throw new Error(data.message || "Błąd autoryzacji.");
+    }
+  } catch (err) {
+    audio.playClick("switch");
+    if (errBadge) {
+      errBadge.textContent = err.message || "Odmowa autoryzacji: nieprawidłowe hasło.";
+      errBadge.style.display = "block";
+    }
+    const box = overlay.querySelector(".login-box");
+    if (box) {
+      box.classList.add("login-shake");
+      setTimeout(() => box.classList.remove("login-shake"), 350);
+    }
+    if (passInp) {
+      passInp.value = "";
+      passInp.focus();
+    }
+  } finally {
+    btnSubmit.innerHTML = '<i class="fas fa-right-to-bracket"></i> ZALOGUJ';
+    btnSubmit.disabled = false;
+  }
+};

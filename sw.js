@@ -15,7 +15,6 @@ const PRECACHE_ASSETS = [
     "https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap"
 ];
 
-// Instalacja i precache kluczowych zasobów
 self.addEventListener("install", (event) => {
     event.waitUntil(
         caches.open(CACHE_NAME).then(async (cache) => {
@@ -31,7 +30,6 @@ self.addEventListener("install", (event) => {
     self.skipWaiting();
 });
 
-// Czyszczenie starych wersji cache
 self.addEventListener("activate", (event) => {
     event.waitUntil(
         caches.keys().then((keys) =>
@@ -47,11 +45,9 @@ self.addEventListener("activate", (event) => {
     self.clients.claim();
 });
 
-// Strategia Cache-First (sieć jako fallback z doładowaniem do cache)
 self.addEventListener("fetch", (event) => {
     const requestUrl = new URL(event.request.url);
 
-    // Wykluczanie dynamicznego API GitHub z cache Service Workera (aplikacja sama obsługuje localStorage)
     if (requestUrl.hostname.includes("raw.githubusercontent.com")) {
         event.respondWith(
             fetch(event.request).catch(() => {

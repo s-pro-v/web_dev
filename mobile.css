@@ -2,13 +2,11 @@
    OXY_OS MOBILE INTERFACE (POPRAWIONY UKŁAD)
    ========================================================================== */
 
-/* Zdejmujemy sztywne ograniczenia ekranu - pozwalamy na naturalne przewijanie */
 body {
     padding: 0 !important;
     overflow-y: auto !important;
 }
 
-/* Główny kontener strony */
 .dashboard-wrapper {
     width: 100vw;
     height: auto !important;
@@ -18,12 +16,9 @@ body {
     border: none;
     box-shadow: none;
     display: block !important;
-    /* Wyłączamy flex, żeby uniknąć zgniatania elementów */
     padding-bottom: 80px !important;
-    /* Robimy miejsce na dole, by pasek nawigacji nie zasłaniał treści */
 }
 
-/* PRZYKLEJONY NAGŁÓWEK (Sticky Header) */
 .dashboard-header {
     position: sticky;
     top: 0;
@@ -49,7 +44,6 @@ body {
     padding: 0.125rem;
 }
 
-/* DOLNY PASEK NAWIGACYJNY (Bottom Tab Bar) */
 .btn-group {
     position: fixed;
     bottom: 0;
@@ -80,7 +74,6 @@ body {
     font-size: 1.25rem;
 }
 
-/* Aktywny przycisk dolny dostaje kolor na górnej krawędzi */
 .btn-group .btn.active {
     background: var(--hover-bg) !important;
     color: var(--highlight-color) !important;
@@ -88,9 +81,6 @@ body {
     border-bottom: none !important;
 }
 
-/* ==========================================================================
-   ZAWARTOŚĆ GŁÓWNA I KARTY
-   ========================================================================== */
 .main-content {
     width: 100% !important;
     height: auto !important;
@@ -109,17 +99,12 @@ body {
 
 .widgets-grid {
     grid-template-columns: 1fr;
-    /* Widżety układają się jeden pod drugim */
 }
 
-/* Ograniczamy marginesy kart dla lepszego upakowania */
 .card {
     margin-bottom: 10px;
 }
 
-/* ==========================================================================
-   TABELA GRAFIKU (Przewijana poziomo)
-   ========================================================================== */
 .schedule-view-content {
     overflow-x: auto;
     overflow-y: visible !important;
@@ -130,7 +115,6 @@ body {
 .schedule-table th,
 .schedule-table td {
     min-width: 32px;
-    /* Lekko rozszerzone, żeby łatwiej trafić palcem w input */
 }
 
 .worker-name-cell {
@@ -143,9 +127,6 @@ body {
     height: 36px;
 }
 
-/* ==========================================================================
-   PASEK BOCZNY (Sidebar)
-   ========================================================================== */
 .sidebar {
     width: 100% !important;
     height: auto !important;
@@ -155,25 +136,19 @@ body {
     background: transparent;
 }
 
-/* GENIALNY TRIK: Ukrywamy całkowicie Sidebar, gdy użytkownik jest w zakładce Grafiku lub Kodu */
 .dashboard-wrapper:has(#view-schedule.active) .sidebar,
 .dashboard-wrapper:has(#view-code.active) .sidebar {
     display: none !important;
 }
 
-/* ==========================================================================
-   MODALE NA PEŁNY EKRAN (Kalendarz i Zmiany)
-   ========================================================================== */
 .shift-modal-overlay {
     align-items: flex-start;
-    /* Otwiera się od góry ekranu */
 }
 
 .shift-modal-content {
     width: 100vw;
     height: 100vh;
     height: 100dvh;
-    /* Bezpieczna wysokość mobilna */
     max-width: none;
     max-height: none;
     border: none;
@@ -194,7 +169,6 @@ body {
     margin-bottom: 10px;
 }
 
-/* Siatka podsumowań w kalendarzu - 2 kolumny na tel */
 #worker-cal-body>div:first-child {
     grid-template-columns: repeat(2, 1fr) !important;
     padding: 0.125rem !important;
@@ -203,7 +177,6 @@ body {
 
 #worker-cal-body>div:first-child>div:last-child {
     grid-column: span 2 !important;
-    /* Element na całą szerokość */
 }
 
 .cal-stat-box strong {
