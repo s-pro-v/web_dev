@@ -1,8 +1,8 @@
 /* ==========================================================================
-   OXY_OS MOBILE INTERFACE (PEŁNY, ZOPTYMALIZOWANY KOD)
+   OXY_OS MOBILE INTERFACE (POPRAWIONY UKŁAD & ELEMENTY DOTYKOWE)
    ========================================================================== */
 
-/* 1. RESET I BLOKADA NIEPOŻĄDANEGO PRZEWIJANIA POZIOMEGO */
+/* 1. RESET I BLOKADA PRZEWIJANIA POZIOMEGO */
 html, body {
     width: 100%;
     max-width: 100%;
@@ -13,7 +13,7 @@ html, body {
     -webkit-tap-highlight-color: transparent;
 }
 
-/* 2. GŁÓWNY WRAPPER APLIKACJI */
+/* 2. GŁÓWNY KONTENER */
 .dashboard-wrapper {
     width: 100%;
     min-height: 100vh;
@@ -24,27 +24,28 @@ html, body {
     box-shadow: none;
     display: flex;
     flex-direction: column;
-    /* Odstęp dolny dopasowany do wysokości paska menu + Safe Area iOS */
+    /* Odpowiedni zapas, by treść nie chowała się pod dolnym menu */
     padding-bottom: calc(75px + env(safe-area-inset-bottom, 0px)) !important;
     box-sizing: border-box;
 }
 
-/* 3. NAGŁÓWEK (STICKY + NOTCH SAFE) */
+/* 3. GŁÓWNY NAGŁÓWEK (STICKY + PROFILE/ADMIN) */
 .dashboard-header {
     position: sticky;
     top: 0;
     z-index: 1000;
-    background: var(--card-bg);
-    padding: max(10px, env(safe-area-inset-top)) 15px 10px 15px;
+    background: var(--card-bg, #1e1e1e);
+    padding: max(8px, env(safe-area-inset-top)) 12px 8px 12px;
     height: auto !important;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border-bottom: 1px solid var(--border-color);
+    border-bottom: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
 }
 
 .page-title {
     font-size: 1.15rem;
+    font-weight: 700;
     margin: 0;
     padding: 0;
     white-space: nowrap;
@@ -52,63 +53,52 @@ html, body {
     text-overflow: ellipsis;
 }
 
-/* 4. GLOBALNE STYLISTYKI I ZACHOWANIE PRZYCISKÓW */
-.btn,
-.user-controls button,
-.user-controls .btn {
-    -webkit-tap-highlight-color: transparent;
-    touch-action: manipulation;
-    user-select: none;
-    cursor: pointer;
-    font-family: inherit;
-    transition: background-color 0.15s ease, transform 0.1s ease, color 0.15s ease;
-}
-
-/* Przyciski użytkownika w nagłówku */
 .user-controls {
     border: none;
     background: transparent;
     padding: 0;
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
 }
 
 .user-controls button,
 .user-controls .btn {
-    min-width: 40px;
-    min-height: 40px;
+    min-width: 34px;
+    min-height: 34px;
+    padding: 4px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    border-radius: 8px;
-    background: transparent;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.05);
     border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
 }
 
 .user-controls button:active,
 .user-controls .btn:active {
-    transform: scale(0.94);
-    background: var(--hover-bg, rgba(255, 255, 255, 0.08));
+    transform: scale(0.92);
+    background: var(--hover-bg, rgba(255, 255, 255, 0.15));
 }
 
-/* 5. DOLNA BELKA NAWIGACYJNA (TAB BAR) */
+/* 4. DOLNA BELKA NAWIGACYJNA (FIX NA OBROBIONE IKONY I TEKST) */
 .btn-group {
     position: fixed;
     bottom: 0;
     left: 0;
     width: 100%;
+    height: calc(58px + env(safe-area-inset-bottom, 0px));
     margin: 0;
     padding: 0 0 env(safe-area-inset-bottom, 0px) 0;
-    background: var(--panel-bg);
-    border-top: 1px solid var(--border-color);
-    box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.15);
+    background: var(--panel-bg, #181818);
+    border-top: 1px solid var(--border-color, rgba(255, 255, 255, 0.12));
+    box-shadow: 0 -4px 14px rgba(0, 0, 0, 0.35);
     display: flex;
     align-items: stretch;
     z-index: 9999;
+    box-sizing: border-box;
 }
 
-/* Pojedynczy przycisk w dolnej belce */
 .btn-group .btn {
     flex: 1;
     position: relative;
@@ -116,61 +106,61 @@ html, body {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    min-height: 52px;              /* Spełnia mobilny standard touch target */
-    padding: 6px 2px 4px 2px;
-    font-size: 11px;
-    font-weight: 500;
-    line-height: 1.2;
-    color: var(--text-muted, #8e8e93);
+    height: 100%;
+    padding: 4px 2px !important;
+    font-size: 10px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    font-weight: 600;
+    line-height: 1.1;
+    color: var(--text-muted, #858585);
     border: none !important;
-    background: transparent;
+    background: transparent !important;
     box-shadow: none !important;
     border-radius: 0 !important;
-    gap: 3px;
+    gap: 4px;
+    touch-action: manipulation;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
 }
 
-.btn-group .btn i {
-    font-size: 1.35rem;
-    line-height: 1;
-    transition: transform 0.15s ease;
+/* Ikony w belce */
+.btn-group .btn i,
+.btn-group .btn svg {
+    font-size: 1.25rem !important;
+    line-height: 1 !important;
+    display: block;
+    margin: 0;
 }
 
+/* Efekt dotknięcia */
 .btn-group .btn:active {
-    background: var(--hover-bg, rgba(255, 255, 255, 0.05));
+    background: rgba(255, 255, 255, 0.05) !important;
 }
 
-.btn-group .btn:active i {
-    transform: scale(0.88);
-}
-
+/* Aktywna zakładka */
 .btn-group .btn.active {
-    color: var(--highlight-color, #007aff) !important;
-    background: var(--hover-bg, rgba(0, 122, 255, 0.08)) !important;
-    font-weight: 600;
+    color: var(--highlight-color, #ff6b00) !important;
+    background: rgba(255, 107, 0, 0.06) !important;
 }
 
-.btn-group .btn.active i {
-    transform: scale(1.05);
-}
-
-/* Wskaźnik aktywnej zakładki (elegancka belka na górze) */
+/* Górna linia aktywnej zakładki */
 .btn-group .btn::before {
     content: '';
     position: absolute;
     top: 0;
-    left: 20%;
-    right: 20%;
+    left: 10%;
+    right: 10%;
     height: 3px;
-    border-radius: 0 0 3px 3px;
     background: transparent;
     transition: background-color 0.2s ease;
 }
 
 .btn-group .btn.active::before {
-    background: var(--highlight-color, #007aff);
+    background: var(--highlight-color, #ff6b00);
 }
 
-/* 6. GŁÓWNA ZAWARTOŚĆ I WIDOKI */
+/* 5. GŁÓWNA ZAWARTOŚĆ I KARTY */
 .main-content {
     width: 100% !important;
     max-width: 100%;
@@ -179,7 +169,7 @@ html, body {
     display: block;
     border: none;
     box-shadow: none;
-    padding: 10px;
+    padding: 8px;
     box-sizing: border-box;
 }
 
@@ -197,12 +187,12 @@ html, body {
 }
 
 .card {
-    margin-bottom: 10px;
+    margin-bottom: 8px;
     width: 100%;
     box-sizing: border-box;
 }
 
-/* 7. TABELA GRAFIKU (PRZEWIJANIE W RAMACH KONTENERA) */
+/* 6. TABELA GRAFIKU */
 .schedule-view-content {
     width: 100%;
     overflow-x: auto;
@@ -218,19 +208,17 @@ html, body {
     text-align: center;
 }
 
-/* Sticky kolumna z nazwą pracownika */
 .worker-name-cell {
     font-size: 11px !important;
     min-width: 90px;
     position: sticky;
     left: 0;
-    background: var(--card-bg, #fff);
+    background: var(--card-bg, #222);
     z-index: 2;
 }
 
-/* Zabezpieczenie przed samowolnym zoomowaniem formularzy w Safari iOS */
 .shift-input {
-    font-size: 16px;
+    font-size: 16px; /* Zapobiega auto-zoomowaniu w Safari */
     height: 38px;
     box-sizing: border-box;
 }
@@ -241,26 +229,13 @@ html, body {
     }
 }
 
-/* 8. PASEK BOCZNY (SIDEBAR) NA MOBILKACH */
-.sidebar {
-    width: 100% !important;
-    height: auto !important;
-    overflow: visible !important;
-    border: none;
-    padding: 0;
-    background: transparent;
-}
-
-.dashboard-wrapper:has(#view-schedule.active) .sidebar,
-.dashboard-wrapper:has(#view-code.active) .sidebar {
-    display: none !important;
-}
-
-/* 9. MODAL PEŁNOEKRANOWY */
+/* 7. POPRAWKA MODALA OBSADY (ZRZUT 2 - GÓRNY PASEK I LISTA) */
 .shift-modal-overlay {
     position: fixed;
     inset: 0;
     z-index: 10000;
+    background: rgba(0, 0, 0, 0.75);
+    display: flex;
     align-items: flex-start;
 }
 
@@ -275,24 +250,76 @@ html, body {
     display: flex;
     flex-direction: column;
     padding-bottom: env(safe-area-inset-bottom, 0px);
+    background: var(--panel-bg, #1a1a1a);
+}
+
+/* Górna belka modalu z wyborem dnia i zamknij (X) */
+.shift-modal-header,
+.shift-modal-content > div:first-child {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    padding: max(8px, env(safe-area-inset-top)) 10px 8px 10px;
+    background: var(--card-bg, #242424);
+    border-bottom: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+    box-sizing: border-box;
+}
+
+/* Przyciski nawigacyjne dnia (< [Dzień 27] > X) */
+.shift-modal-content select,
+.shift-modal-content .date-picker-select {
+    flex: 1;
+    min-width: 0;
+    height: 36px;
+    font-size: 13px;
+    padding: 2px 6px;
+    border-radius: 6px;
+    text-overflow: ellipsis;
+}
+
+.shift-modal-content button {
+    height: 36px;
+    min-width: 36px;
+    padding: 0 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    touch-action: manipulation;
 }
 
 .shift-modal-body {
     flex: 1;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
-    padding: 12px;
+    padding: 10px;
     display: flex;
     flex-direction: column;
+    gap: 10px;
 }
 
 .shift-column {
     width: 100%;
     min-width: 100%;
-    margin-bottom: 12px;
+    margin-bottom: 8px;
 }
 
-/* 10. KALENDARZ I STATYSTYKI */
+/* 8. PANELE BOCZNE I KALENDARZ */
+.sidebar {
+    width: 100% !important;
+    height: auto !important;
+    overflow: visible !important;
+    border: none;
+    padding: 0;
+    background: transparent;
+}
+
+.dashboard-wrapper:has(#view-schedule.active) .sidebar,
+.dashboard-wrapper:has(#view-code.active) .sidebar {
+    display: none !important;
+}
+
 #worker-cal-body > div:first-child {
     display: grid;
     grid-template-columns: repeat(2, 1fr) !important;
