@@ -212,6 +212,49 @@ app.delete("/api/users/:username", (req, res) => {
 });
 
 // ========================================================
+// ENDPOINT: Status serwera i bazy
+// ========================================================
+app.get("/api/status", (req, res) => {
+    const users = loadUsers();
+    res.json({
+        success: true,
+        status: "ONLINE",
+        version: "2.0.0",
+        usersCount: users.length,
+        serverTime: new Date().toISOString(),
+        uptime: Math.floor(process.uptime())
+    });
+});
+
+// ========================================================
+// ENDPOINT: Zmiana / Reset hasła użytkownika
+// ========================================================
+app.put("/api/users/:username/password", (req, res) => {
+    const { username } = req.params;
+    const { newPassword } = req.body;
+
+    if (!newPassword || typeof newPassword !== "string" || newPassword.trim().length < 3) {
+        return res.status(400).json({ success: false, message: "Hasło musi mieć co najmniej 3 znaki." });
+    }
+
+    const users = loadUsers();
+    const userObj = users.find(u => u.user.toLowerCase() === username.toLowerCase());
+
+    if (!userObj) {
+        return res.status(404).json({ success: false, message: "Nie znaleziono użytkownika." });
+    }
+
+    userObj.pass = bcrypt.hashSync(newPassword.trim(), 10);
+    saveUsers(users);
+
+    res.json({
+        success: true,
+        message: `Hasło dla "${userObj.user}" zostało zaktualizowane.`
+    });
+});
+
+
+// ========================================================
 // ENDPOINT: Synchronizacja z GitHub z bezpiecznym haszowaniem
 // ========================================================
 app.post("/api/sync-github", async (req, res) => {

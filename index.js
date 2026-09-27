@@ -2,7 +2,7 @@
   "use strict";
 
   // ==========================================
-  // SYNTEZATOR DŹWIĘKU SPRZĘTOWEGO (HARDWARE AUDIO)
+  // HARDWARE TACTILE AUDIO SYNTHESIZER
   // ==========================================
   class HardwareAudio {
     constructor() {
@@ -59,7 +59,7 @@
           osc.stop(now + 0.015);
         }
       } catch (e) {
-        // Fallback w przypadku braku uprawnień audio
+        // Ignoruj w przypadku braku uprawnień
       }
     }
   }
@@ -67,7 +67,7 @@
   const audio = new HardwareAudio();
 
   // ==========================================
-  // KONTROLKA TAKTYLNA: CUSTOM SELECT
+  // CUSTOM SELECT COMPONENT
   // ==========================================
   class CustomSelect {
     constructor(element, onSelectCallback = null) {
@@ -79,10 +79,7 @@
       this.hiddenInput = element.querySelector('input[type="hidden"]');
       this.triggerContent = element.querySelector(".trigger-content");
       this.onSelectCallback = onSelectCallback;
-
       this.isOpen = false;
-      this.focusedOptionIndex = -1;
-
       this.init();
     }
 
@@ -93,33 +90,19 @@
         this.toggle();
       });
 
-      this.options.forEach((opt, index) => {
+      this.options.forEach((opt) => {
         opt.addEventListener("click", (e) => {
           e.stopPropagation();
           audio.playClick("normal");
           this.selectOption(opt);
           this.close();
         });
-
-        opt.addEventListener("mouseenter", () => {
-          this.setFocusedIndex(index, false);
-        });
       });
-
-      this.trigger.addEventListener("keydown", (e) => this.handleKeyDown(e));
-
-      const initialSelected = this.options.findIndex((opt) =>
-        opt.classList.contains("selected")
-      );
-      if (initialSelected !== -1) {
-        this.focusedOptionIndex = initialSelected;
-      }
     }
 
     toggle() {
-      if (this.isOpen) {
-        this.close();
-      } else {
+      if (this.isOpen) this.close();
+      else {
         CustomSelect.closeAll(this);
         this.open();
       }
@@ -129,15 +112,7 @@
       this.isOpen = true;
       if (this.chassis) this.chassis.classList.add("active");
       this.trigger.classList.add("active");
-      this.trigger.setAttribute("aria-expanded", "true");
       this.optionsContainer.classList.add("show");
-
-      const selected = this.options.find((opt) =>
-        opt.classList.contains("selected")
-      );
-      if (selected) {
-        selected.scrollIntoView({ block: "nearest" });
-      }
     }
 
     close() {
@@ -145,67 +120,7 @@
       this.isOpen = false;
       if (this.chassis) this.chassis.classList.remove("active");
       this.trigger.classList.remove("active");
-      this.trigger.setAttribute("aria-expanded", "false");
       this.optionsContainer.classList.remove("show");
-      this.clearKeyboardFocus();
-    }
-
-    handleKeyDown(e) {
-      if (!this.isOpen) {
-        if (["ArrowDown", "ArrowUp", "Enter", " "].includes(e.key)) {
-          e.preventDefault();
-          this.open();
-        }
-        return;
-      }
-
-      switch (e.key) {
-        case "ArrowDown":
-          e.preventDefault();
-          this.moveFocus(1);
-          break;
-        case "ArrowUp":
-          e.preventDefault();
-          this.moveFocus(-1);
-          break;
-        case "Enter":
-        case " ":
-          e.preventDefault();
-          if (
-            this.focusedOptionIndex >= 0 &&
-            this.focusedOptionIndex < this.options.length
-          ) {
-            this.selectOption(this.options[this.focusedOptionIndex]);
-            this.close();
-          }
-          break;
-        case "Escape":
-          e.preventDefault();
-          this.close();
-          this.trigger.focus();
-          break;
-      }
-    }
-
-    moveFocus(delta) {
-      let newIndex = this.focusedOptionIndex + delta;
-      if (newIndex < 0) newIndex = this.options.length - 1;
-      if (newIndex >= this.options.length) newIndex = 0;
-      this.setFocusedIndex(newIndex);
-    }
-
-    setFocusedIndex(index, scroll = true) {
-      this.clearKeyboardFocus();
-      this.focusedOptionIndex = index;
-      const opt = this.options[index];
-      if (opt) {
-        opt.classList.add("keyboard-focused");
-        if (scroll) opt.scrollIntoView({ block: "nearest" });
-      }
-    }
-
-    clearKeyboardFocus() {
-      this.options.forEach((opt) => opt.classList.remove("keyboard-focused"));
     }
 
     selectOption(optionElement) {
@@ -213,16 +128,9 @@
       const icon = optionElement.querySelector("i");
       const text = optionElement.textContent.trim();
 
-      this.options.forEach((opt) => {
-        const isSelected = opt === optionElement;
-        opt.classList.toggle("selected", isSelected);
-        opt.setAttribute("aria-selected", isSelected ? "true" : "false");
-      });
+      this.options.forEach((opt) => opt.classList.toggle("selected", opt === optionElement));
 
-      let iconHtml = "";
-      if (icon) {
-        iconHtml = `<i class="${icon.className}"></i>`;
-      }
+      let iconHtml = icon ? `<i class="${icon.className}"></i>` : "";
       this.triggerContent.innerHTML = `${iconHtml}<span>${text}</span>`;
 
       if (this.hiddenInput) {
@@ -234,7 +142,7 @@
         this.onSelectCallback({
           name: this.container.getAttribute("data-name"),
           value: val,
-          label: text,
+          label: text
         });
       }
     }
@@ -249,7 +157,7 @@
   }
 
   // ==========================================
-  // SYSTEM ALERTÓW I MONITÓW OXY_OS
+  // SYSTEM ALERTY & POTWIERDZENIA OXY_OS
   // ==========================================
   function oxyAlert(message, type = "info", title = "") {
     let container = document.getElementById("oxy-alert-container");
@@ -263,15 +171,15 @@
     alertEl.className = `oxy-alert ${type}`;
 
     let icon = "fa-info-circle";
-    let defaultTitle = "INFORMACJA SYSTEMOWA";
+    let defaultTitle = "KOMUNIKAT SYSTEMOWY";
     if (type === "success") {
       icon = "fa-check-circle";
       defaultTitle = "SUKCES";
     } else if (type === "error") {
-      icon = "fa-exclamation-triangle";
-      defaultTitle = "BŁĄD SYSTEMU";
+      icon = "fa-triangle-exclamation";
+      defaultTitle = "BŁĄD";
     } else if (type === "warning") {
-      icon = "fa-exclamation-circle";
+      icon = "fa-circle-exclamation";
       defaultTitle = "OSTRZEŻENIE";
     }
 
@@ -307,7 +215,7 @@
           <p id="oxy-confirm-msg" style="margin-bottom: 1.5rem; color: var(--text-muted); font-size: 14px; line-height: 1.4;"></p>
           <div style="display: flex; gap: 10px;">
             <div class="btn-bg" style="flex: 1; display:flex;"><button id="oxy-confirm-no" class="btn" style="flex: 1; justify-content: center; height: 40px; border:none;">ANULUJ</button></div>
-            <div class="btn-bg" style="flex: 1; display:flex;"><button id="oxy-confirm-yes" class="btn active" style="flex: 1; justify-content: center; height: 40px; background: var(--danger-color) !important; border:none; color: #fff;">TAK, WYKONAJ</button></div>
+            <div class="btn-bg" style="flex: 1; display:flex;"><button id="oxy-confirm-yes" class="btn active" style="flex: 1; justify-content: center; height: 40px; background: var(--danger-color) !important; border:none; color: #fff;">WYKONAJ</button></div>
           </div>
         </div>
       `;
@@ -325,10 +233,7 @@
     btnYes.parentNode.replaceChild(newBtnYes, btnYes);
     btnNo.parentNode.replaceChild(newBtnNo, btnNo);
 
-    newBtnNo.addEventListener("click", () => {
-      overlay.classList.add("hidden");
-    });
-
+    newBtnNo.addEventListener("click", () => overlay.classList.add("hidden"));
     newBtnYes.addEventListener("click", () => {
       overlay.classList.add("hidden");
       if (typeof onConfirm === "function") onConfirm();
@@ -336,12 +241,10 @@
   }
 
   // ==========================================
-  // ZARZĄDZANIE STANEM, DANYMI I GRUPAMI
+  // STAN I ZARZĄDZANIE GRAFIKIEM
   // ==========================================
   const STORAGE_KEY = "harmonogram_data";
-  const USERS_KEY = "oxy_os_users";
-  const GITHUB_URL =
-    "https://raw.githubusercontent.com/s-pro-v/json-lista/refs/heads/main/mobile-grafik.json";
+  const GITHUB_URL = "https://raw.githubusercontent.com/s-pro-v/json-lista/refs/heads/main/mobile-grafik.json";
 
   const groupMetadata = {
     d: { colorLight: "#d35400", colorDark: "#cc8a28" },
@@ -349,14 +252,11 @@
     p: { colorLight: "#3178c6", colorDark: "#5981cc" },
     k: { colorLight: "#c0392b", colorDark: "#cc6f44" },
     m: { colorLight: "#b7950b", colorDark: "#cccc00" },
-    y: { colorLight: "#196f3d", colorDark: "#00cc00" },
+    y: { colorLight: "#196f3d", colorDark: "#00cc00" }
   };
 
   function getDisplayShiftCode(rawShift) {
-    let code = String(rawShift || "")
-      .toUpperCase()
-      .replace(/\s*\([^)]+\)/g, "")
-      .trim();
+    let code = String(rawShift || "").toUpperCase().replace(/\s*\([^)]+\)/g, "").trim();
     if (code === "P1") return "1";
     if (["P2", "N1", "N2"].includes(code)) return "2";
     return code;
@@ -379,37 +279,27 @@
         generated: new Date().toISOString(),
         days: ["1", "2", "3"],
         weekdays: ["PN", "WT", "SR"],
-        month: "BRAK DANYCH",
+        month: "PRZYKŁAD"
       },
-      workers: [{ id: 1, name: "Przykład", shifts: ["1 (D)", "2 (D)", ""] }],
-    },
+      workers: [{ id: 1, name: "Przykładowy Pracownik", shifts: ["1", "2", ""] }]
+    }
   ];
 
   let appState = {
     allMonths: [],
     activeMonthIdx: 0,
-    content: "",
+    content: ""
   };
 
   function findCurrentMonthIndex() {
     if (!appState.allMonths || appState.allMonths.length === 0) return 0;
-    const polishMonths = [
-      "STYCZEN", "LUTY", "MARZEC", "KWIECIEN", "MAJ", "CZERWIEC",
-      "LIPIEC", "SIERPIEN", "WRZESIEN", "PAZDZIERNIK", "LISTOPAD", "GRUDZIEN",
-    ];
+    const polishMonths = ["STYCZEN", "LUTY", "MARZEC", "KWIECIEN", "MAJ", "CZERWIEC", "LIPIEC", "SIERPIEN", "WRZESIEN", "PAZDZIERNIK", "LISTOPAD", "GRUDZIEN"];
     const currentMonthName = polishMonths[new Date().getMonth()];
 
     const idx = appState.allMonths.findIndex((m) => {
       if (!m.meta || !m.meta.month) return false;
-      const normalizedMetaMonth = m.meta.month
-        .toUpperCase()
-        .replace(/[ĄĆĘŁŃÓŚŹŻ]/g, (match) => {
-          const map = {
-            Ą: "A", Ć: "C", Ę: "E", Ł: "L", Ń: "N", Ó: "O", Ś: "S", Ź: "Z", Ż: "Z",
-          };
-          return map[match] || match;
-        });
-      return normalizedMetaMonth.includes(currentMonthName);
+      const normalized = m.meta.month.toUpperCase().replace(/[ĄĆĘŁŃÓŚŹŻ]/g, (c) => ({ Ą: "A", Ć: "C", Ę: "E", Ł: "L", Ń: "N", Ó: "O", Ś: "S", Ź: "Z", Ż: "Z" }[c] || c));
+      return normalized.includes(currentMonthName);
     });
     return idx !== -1 ? idx : 0;
   }
@@ -419,18 +309,11 @@
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) {
-          appState.allMonths = parsed;
-        } else if (parsed.meta && parsed.workers) {
-          appState.allMonths = [parsed];
-        } else {
-          throw new Error("Nieprawidłowa struktura danych");
-        }
+        appState.allMonths = Array.isArray(parsed) ? parsed : (parsed.meta && parsed.workers ? [parsed] : DEFAULT_JSON);
       } else {
         appState.allMonths = DEFAULT_JSON;
       }
     } catch (e) {
-      console.warn("Wyrzucono uszkodzony cache lokalny.");
       appState.allMonths = DEFAULT_JSON;
       localStorage.removeItem(STORAGE_KEY);
     }
@@ -439,513 +322,15 @@
   }
 
   // ==========================================
-  // ZARZĄDZANIE KONTAMI I UNIKALNYMI HASŁAMI
-  // ==========================================
-  function generateUniquePass(firstName, workerId, fallbackIdx, currentUsers) {
-    const cleanFirst = (firstName || "Pracownik").trim().split(" ")[0];
-    const idPart = workerId != null ? workerId : fallbackIdx + 1;
-    let candidate = `${cleanFirst}${idPart}`;
-    let counter = 1;
-
-    while (
-      currentUsers.some(
-        (u) => u.pass && u.pass.toLowerCase() === candidate.toLowerCase()
-      )
-    ) {
-      candidate = `${cleanFirst}${idPart}_${counter}`;
-      counter++;
-    }
-    return candidate;
-  }
-
-  function cleanupDuplicatePasswords() {
-    const users = JSON.parse(localStorage.getItem(USERS_KEY) || "[]");
-    const passMap = new Set();
-    let modified = false;
-
-    users.forEach((u, idx) => {
-      if (u.user === "admin") {
-        passMap.add(u.pass.toLowerCase());
-        return;
-      }
-
-      const lowerPass = (u.pass || "").toLowerCase();
-      if (!lowerPass || passMap.has(lowerPass)) {
-        const base = (u.user || "Pracownik").split("_")[0];
-        u.pass = generateUniquePass(
-          base,
-          u.workerId,
-          idx,
-          users.filter((_, i) => i !== idx)
-        );
-        modified = true;
-      }
-      passMap.add(u.pass.toLowerCase());
-    });
-
-    if (modified) {
-      localStorage.setItem(USERS_KEY, JSON.stringify(users));
-    }
-  }
-
-  function syncUsersFromSchedule(silent = false) {
-    const users = JSON.parse(localStorage.getItem(USERS_KEY) || "[]");
-    let addedCount = 0;
-
-    appState.allMonths.forEach((m) => {
-      if (!m.workers || !Array.isArray(m.workers)) return;
-
-      m.workers.forEach((w, wIdx) => {
-        if (!w.name || w.name.trim() === "" || w.name === "Przykład") return;
-
-        const username = w.name.trim().replace(/\s+/g, "_");
-        const exists = users.find(
-          (u) => u.user.toLowerCase() === username.toLowerCase()
-        );
-
-        if (!exists) {
-          const firstName = w.name.trim().split(" ")[0];
-          const uniquePass = generateUniquePass(firstName, w.id, wIdx, users);
-
-          users.push({
-            user: username,
-            pass: uniquePass,
-            workerId: w.id || null,
-            role: "worker",
-          });
-          addedCount++;
-        } else if (w.id != null && exists.workerId == null) {
-          exists.workerId = w.id;
-        }
-      });
-    });
-
-    if (addedCount > 0) {
-      localStorage.setItem(USERS_KEY, JSON.stringify(users));
-      renderUsersModalList();
-      if (!silent) {
-        oxyAlert(
-          `Utworzono ${addedCount} kont z unikalnymi hasłami (format: [Imię][ID]).`,
-          "success",
-          "SYNCHRONIZACJA KONT"
-        );
-      }
-    } else if (!silent) {
-      oxyAlert(
-        "Wszyscy pracownicy posiadają już wygenerowane unikalne hasła.",
-        "info",
-        "SYNCHRONIZACJA"
-      );
-    }
-  }
-
-  function renderUsersModalList() {
-    const listEl = document.getElementById("users-list");
-    if (!listEl) return;
-    const users = JSON.parse(localStorage.getItem(USERS_KEY) || "[]");
-    listEl.innerHTML = "";
-
-    users.forEach((u, idx) => {
-      const isAdmin = u.user === "admin";
-      const row = document.createElement("div");
-      row.className = "user-item-chassis";
-
-      row.innerHTML = `
-        <div class="user-item-main">
-          <div class="user-item-identity">
-            <i class="fas ${isAdmin ? "fa-shield-halved text-highlight" : "fa-user text-muted"}"></i>
-            <div class="user-item-details">
-              <span class="user-item-name">${u.user}</span>
-              <span class="user-item-role">${isAdmin
-          ? "GŁÓWNY ADMIN"
-          : u.role === "worker"
-            ? `PRACOWNIK (ID: ${u.workerId != null ? u.workerId : idx + 1})`
-            : "UŻYTKOWNIK"
-        }</span>
-            </div>
-          </div>
-
-          <div class="user-item-creds" title="Kliknij, aby skopiować unikalne hasło" data-copy-pass="${u.pass}">
-            <span class="creds-label">UNIKALNE HASŁO:</span>
-            <code class="creds-val">${u.pass}</code>
-            <i class="fas fa-copy creds-copy-icon"></i>
-          </div>
-        </div>
-
-        <div class="user-item-actions">
-          <div class="btn-bg">
-            <button type="button" class="btn btn-login-as" data-username="${u.user}" title="Zaloguj na to konto">
-              <i class="fas fa-right-to-bracket"></i>
-              <span class="btn-text">ZALOGUJ</span>
-            </button>
-          </div>
-
-          ${isAdmin
-          ? `<div class="admin-locked-badge" title="Konto systemowe"><i class="fas fa-lock"></i></div>`
-          : `<div class="btn-bg">
-                   <button type="button" class="btn btn-icon delete-user-btn" data-idx="${idx}" title="Usuń konto">
-                     <i class="fas fa-trash"></i>
-                   </button>
-                 </div>`
-        }
-        </div>
-      `;
-
-      listEl.appendChild(row);
-    });
-  }
-
-  function initUserManagementModal() {
-    if (!localStorage.getItem(USERS_KEY)) {
-      localStorage.setItem(
-        USERS_KEY,
-        JSON.stringify([{ user: "admin", pass: "admin123", role: "admin" }])
-      );
-    }
-    cleanupDuplicatePasswords();
-
-    const modalUsers = document.getElementById("users-modal-overlay");
-    const btnCloseUsers = document.getElementById("users-modal-close");
-    const btnOpenUsers = document.getElementById("btn-users");
-    const btnSyncUsers = document.getElementById("btn-sync-users");
-    const btnAdd = document.getElementById("btn-add-user");
-    const listEl = document.getElementById("users-list");
-
-    if (btnOpenUsers) {
-      btnOpenUsers.addEventListener("click", () => {
-        if (sessionStorage.getItem("oxy_os_user") !== "admin") return;
-        renderUsersModalList();
-        modalUsers.classList.add("active");
-      });
-    }
-
-    if (btnCloseUsers && modalUsers) {
-      btnCloseUsers.addEventListener("click", () =>
-        modalUsers.classList.remove("active")
-      );
-      modalUsers.addEventListener("click", (e) => {
-        if (e.target === modalUsers) modalUsers.classList.remove("active");
-      });
-    }
-
-    if (btnSyncUsers) {
-      btnSyncUsers.addEventListener("click", () => syncUsersFromSchedule(false));
-    }
-
-    if (btnAdd) {
-      btnAdd.addEventListener("click", () => {
-        const uInp = document.getElementById("new-username");
-        const pInp = document.getElementById("new-password");
-        const uVal = uInp.value.trim().replace(/\s+/g, "_");
-        const pVal = pInp.value.trim();
-
-        if (!uVal || !pVal) {
-          oxyAlert("Wprowadź nazwę użytkownika oraz hasło.", "warning", "BRAK DANYCH");
-          return;
-        }
-
-        const users = JSON.parse(localStorage.getItem(USERS_KEY) || "[]");
-        if (users.find((u) => u.user.toLowerCase() === uVal.toLowerCase())) {
-          oxyAlert("Użytkownik o takiej nazwie już istnieje w bazie.", "error", "DUPLIKAT LOGINU");
-          return;
-        }
-
-        if (users.find((u) => u.pass.toLowerCase() === pVal.toLowerCase())) {
-          oxyAlert("To hasło jest już przypisane do innego konta. Każde hasło musi być unikalne.", "error", "DUPLIKAT HASŁA");
-          return;
-        }
-
-        users.push({ user: uVal, pass: pVal, role: "custom" });
-        localStorage.setItem(USERS_KEY, JSON.stringify(users));
-        uInp.value = "";
-        pInp.value = "";
-        renderUsersModalList();
-        oxyAlert(`Utworzono konto dla "${uVal}" z unikalnym hasłem.`, "success", "NOWY UŻYTKOWNIK");
-      });
-    }
-
-    if (listEl) {
-      listEl.addEventListener("click", (e) => {
-        const loginBtn = e.target.closest(".btn-login-as");
-        if (loginBtn) {
-          const targetUser = loginBtn.dataset.username;
-          sessionStorage.setItem("oxy_os_user", targetUser);
-          if (modalUsers) modalUsers.classList.remove("active");
-          renderLoginScreen();
-          renderSchedule();
-          oxyAlert(`Zalogowano jako: <strong>${targetUser}</strong>`, "success", "AUTORYZACJA");
-          return;
-        }
-
-        const copyBadge = e.target.closest("[data-copy-pass]");
-        if (copyBadge) {
-          const pass = copyBadge.getAttribute("data-copy-pass");
-          navigator.clipboard.writeText(pass).then(() => {
-            oxyAlert(`Skopiowano unikalne hasło: <code>${pass}</code>`, "info", "SCHOWEK");
-          });
-          return;
-        }
-
-        const deleteBtn = e.target.closest(".delete-user-btn");
-        if (deleteBtn) {
-          const idx = parseInt(deleteBtn.dataset.idx, 10);
-          const users = JSON.parse(localStorage.getItem(USERS_KEY) || "[]");
-
-          if (users[idx].user === "admin") {
-            oxyAlert("Konta 'admin' nie można usunąć.", "error", "ODMOWA DOSTĘPU");
-            return;
-          }
-
-          oxyConfirm(
-            `Czy na pewno chcesz bezpowrotnie usunąć konto "${users[idx].user}"?`,
-            () => {
-              users.splice(idx, 1);
-              localStorage.setItem(USERS_KEY, JSON.stringify(users));
-              renderUsersModalList();
-              oxyAlert("Konto użytkownika zostało usunięte.", "info", "USUNIĘTO");
-            }
-          );
-        }
-      });
-    }
-  }
-
-  // ==========================================
-  // DYNAMICZNY RENDERER EKRANU LOGOWANIA
-  // ==========================================
-  function renderLoginScreen(mode = "quick_pass") {
-    let overlay = document.getElementById("login-overlay");
-    if (!overlay) {
-      overlay = document.createElement("div");
-      overlay.id = "login-overlay";
-      overlay.className = "login-overlay";
-      document.body.prepend(overlay);
-    }
-
-    const currentUser = sessionStorage.getItem("oxy_os_user");
-    const wrapper = document.querySelector(".dashboard-wrapper");
-    const btnUsers = document.getElementById("btn-users");
-    const btnCodeView = document.getElementById("btn-view-code");
-    const pageTitle = document.querySelector(".page-title");
-
-    if (currentUser) {
-      overlay.classList.add("hidden");
-      if (wrapper) wrapper.classList.remove("locked");
-
-      const isAdmin = currentUser === "admin";
-      if (btnUsers) btnUsers.style.display = isAdmin ? "flex" : "none";
-      if (btnCodeView) btnCodeView.style.display = isAdmin ? "inline-flex" : "none";
-      if (pageTitle) {
-        pageTitle.innerHTML = `Workspace <span class="tactile-badge active" style="margin-left:8px;font-size:10px;">${currentUser}</span>`;
-      }
-      return;
-    }
-
-    if (wrapper) wrapper.classList.add("locked");
-    overlay.classList.remove("hidden");
-    if (btnUsers) btnUsers.style.display = "none";
-    if (btnCodeView) btnCodeView.style.display = "none";
-
-    const currentMonth =
-      appState.allMonths && appState.allMonths[appState.activeMonthIdx]
-        ? appState.allMonths[appState.activeMonthIdx]
-        : null;
-    const workers =
-      currentMonth && currentMonth.workers
-        ? currentMonth.workers.filter(
-          (w) => w.name && w.name.trim() !== "" && w.name !== "Przykład"
-        )
-        : [];
-
-    overlay.innerHTML = `
-      <div class="login-box card hud-bracket" style="max-width: 420px; width: 95%;">
-        <!-- Pasek stanu HUD -->
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; border-bottom:1px solid var(--border-color); padding-bottom:0.5rem;">
-          <div style="display:flex; align-items:center; gap:8px;">
-            <span class="led-indicator active" style="background:var(--highlight-color); box-shadow:0 0 8px var(--highlight-color);"></span>
-            <span style="font-family:var(--font-tech); font-size:11px; letter-spacing:0.1em; color:var(--text-muted);">SYS.AUTH_MODULE // v2.0</span>
-          </div>
-          <div class="btn-group tab-chassis" style="margin:0;">
-            <button type="button" id="tab-auth-pass" class="btn ${mode === "quick_pass" ? "active" : ""}" style="height:24px; min-width:65px; font-size:9px; padding:0 6px;">HASŁO</button>
-            <button type="button" id="tab-auth-admin" class="btn ${mode === "credentials" ? "active" : ""}" style="height:24px; min-width:65px; font-size:9px; padding:0 6px;">ADMIN</button>
-          </div>
-        </div>
-
-        <!-- Nagłówek -->
-        <div style="text-align:center; margin-bottom:1.25rem;">
-          <div style="width:42px; height:42px; margin:0 auto 0.5rem; display:flex; align-items:center; justify-content:center; background:var(--bg-tertiary); border:1px solid var(--border-color); box-shadow:var(--shadow-inset);">
-            <i class="fas fa-fingerprint" style="font-size:22px; color:var(--highlight-color);"></i>
-          </div>
-          <h2 class="card-title" style="font-size:1.1rem; margin:0;">AUTORYZACJA OXY_OS</h2>
-          <p style="font-size:11px; color:var(--text-muted); margin-top:3px;">
-            ${mode === "quick_pass" ? "Wprowadź unikalne hasło pracownika:" : "Wprowadź poświadczenia administratora:"}
-          </p>
-        </div>
-
-        <!-- Formularz w gniazdach chassis -->
-        <div class="login-input-group" style="gap:8px;">
-          ${mode === "credentials"
-        ? `
-            <div class="input-chassis">
-              <input type="text" id="login-username" class="shift-input login-input-field tactile-input" 
-                     placeholder="Login administratora..." autocomplete="off">
-            </div>
-          `
-        : ""
-      }
-
-          <div class="input-chassis">
-            <input type="password" id="login-password" class="shift-input login-input-field tactile-input" 
-                   placeholder="${mode === "quick_pass" ? "Unikalne hasło..." : "Hasło dostępu..."}" autocomplete="current-password">
-          </div>
-
-          <!-- Matryca szybkiego wyboru operatora (w trybie hasła) -->
-          ${mode === "quick_pass" && workers.length > 0
-        ? `
-            <div style="margin-top:4px;">
-              <div style="font-size:9px; text-transform:uppercase; color:var(--text-muted); margin-bottom:4px; font-family:var(--font-tech); display:flex; justify-content:space-between;">
-                <span>Wskaż profil pracownika:</span>
-                <span style="color:var(--highlight-color);">${workers.length} PROFILI</span>
-              </div>
-              <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(90px, 1fr)); gap:4px; max-height:95px; overflow-y:auto; padding:4px; background:var(--bg-color); border:1px solid var(--border-color); box-shadow:var(--shadow-inset);">
-                ${workers
-          .map(
-            (w) => `
-                  <button type="button" class="btn-worker-chip" data-worker="${w.name}" 
-                          style="padding:3px 6px; font-size:10px; font-family:var(--font-family); background:var(--bg-tertiary); border:1px solid var(--border-color); color:var(--text-color); text-align:left; cursor:pointer; text-overflow:ellipsis; overflow:hidden; white-space:nowrap;">
-                    <i class="fas fa-user" style="font-size:8px; opacity:0.5; margin-right:3px;"></i>${w.name.split(" ")[0]}
-                  </button>
-                `
-          )
-          .join("")}
-              </div>
-            </div>
-          `
-        : ""
-      }
-
-          <div class="btn-bg" style="width:100%; margin-top:6px;">
-            <button type="button" id="btn-submit-auth" class="btn active login-submit-btn" style="width:100%; height:38px;">
-              <i class="fas fa-right-to-bracket"></i> ZALOGUJ
-            </button>
-          </div>
-        </div>
-
-        <p id="login-error-badge" class="login-error-msg" style="display:none; text-align:center; margin-top:8px;"></p>
-      </div>
-    `;
-
-    const btnPassMode = document.getElementById("tab-auth-pass");
-    const btnAdminMode = document.getElementById("tab-auth-admin");
-    const btnSubmit = document.getElementById("btn-submit-auth");
-    const passInp = document.getElementById("login-password");
-    const userInp = document.getElementById("login-username");
-    const errBadge = document.getElementById("login-error-badge");
-
-    if (btnPassMode)
-      btnPassMode.addEventListener("click", () => renderLoginScreen("quick_pass"));
-    if (btnAdminMode)
-      btnAdminMode.addEventListener("click", () => renderLoginScreen("credentials"));
-
-    let selectedWorkerName = null;
-    overlay.querySelectorAll(".btn-worker-chip").forEach((chip) => {
-      chip.addEventListener("click", () => {
-        audio.playClick("normal");
-        selectedWorkerName = chip.dataset.worker;
-        overlay.querySelectorAll(".btn-worker-chip").forEach((c) => {
-          c.style.borderColor = "var(--border-color)";
-          c.style.color = "var(--text-color)";
-        });
-        chip.style.borderColor = "var(--highlight-color)";
-        chip.style.color = "var(--highlight-color)";
-        if (passInp) {
-          passInp.placeholder = `Hasło: ${selectedWorkerName.split(" ")[0]}...`;
-          passInp.focus();
-        }
-      });
-    });
-
-    const performLogin = () => {
-      const users = JSON.parse(localStorage.getItem(USERS_KEY) || "[]");
-      const passVal = passInp ? passInp.value.trim() : "";
-      const userVal = userInp ? userInp.value.trim() : "";
-
-      let matched = null;
-
-      if (mode === "credentials") {
-        matched = users.find(
-          (u) =>
-            u.user.toLowerCase() === userVal.toLowerCase() && u.pass === passVal
-        );
-      } else {
-        if (selectedWorkerName && passVal) {
-          const uKey = selectedWorkerName.replace(/\s+/g, "_").toLowerCase();
-          matched = users.find(
-            (u) => u.user.toLowerCase() === uKey && u.pass === passVal
-          );
-        }
-        if (!matched && passVal) {
-          matched = users.find((u) => u.pass === passVal);
-        }
-      }
-
-      if (matched) {
-        audio.playClick("heavy");
-        sessionStorage.setItem("oxy_os_user", matched.user);
-        renderLoginScreen();
-        renderSchedule();
-        oxyAlert(
-          `Zalogowano jako: <strong>${matched.user}</strong>`,
-          "success",
-          "AUTORYZACJA"
-        );
-      } else {
-        audio.playClick("switch");
-        if (errBadge) {
-          errBadge.textContent = "Odmowa autoryzacji: nieprawidłowe hasło.";
-          errBadge.style.display = "block";
-        }
-        const box = overlay.querySelector(".login-box");
-        if (box) {
-          box.classList.add("login-shake");
-          setTimeout(() => box.classList.remove("login-shake"), 350);
-        }
-        if (passInp) {
-          passInp.value = "";
-          passInp.focus();
-        }
-      }
-    };
-
-    if (btnSubmit) btnSubmit.addEventListener("click", performLogin);
-    [passInp, userInp].forEach((inp) => {
-      if (inp) {
-        inp.addEventListener("keydown", (e) => {
-          if (e.key === "Enter") performLogin();
-        });
-      }
-    });
-
-    setTimeout(() => {
-      if (passInp) passInp.focus();
-    }, 50);
-  }
-
-  // ==========================================
-  // LOGIKA ZAKŁADEK I EDYTORA
+  // ZAKŁADKI, EDYTOR I CZAS
   // ==========================================
   function initTabsAndEditor() {
-    const tabs = ["dashboard", "schedule", "code"];
-    tabs.forEach((tab) => {
+    ["dashboard", "schedule", "code"].forEach((tab) => {
       const btn = document.getElementById(`btn-view-${tab}`);
       if (btn) {
         btn.addEventListener("click", () => {
-          document
-            .querySelectorAll(".view-container")
-            .forEach((el) => el.classList.remove("active"));
-          document
-            .querySelectorAll(".btn-group .btn")
-            .forEach((el) => el.classList.remove("active"));
+          document.querySelectorAll(".view-container").forEach((el) => el.classList.remove("active"));
+          document.querySelectorAll(".btn-group .btn").forEach((el) => el.classList.remove("active"));
 
           const viewEl = document.getElementById(`view-${tab}`);
           if (viewEl) viewEl.classList.add("active");
@@ -972,16 +357,6 @@
         } catch (err) { }
       });
     }
-
-    const btnLogout = document.getElementById("btn-logout");
-    if (btnLogout) {
-      btnLogout.addEventListener("click", () => {
-        oxyConfirm("Czy na pewno chcesz zakończyć sesję operatora OXY_OS?", () => {
-          sessionStorage.removeItem("oxy_os_user");
-          renderLoginScreen();
-        });
-      });
-    }
   }
 
   function startClock() {
@@ -1000,24 +375,17 @@
     const container = document.getElementById("schedule-content");
     if (!container || appState.allMonths.length === 0) return;
 
-    if (appState.activeMonthIdx >= appState.allMonths.length)
-      appState.activeMonthIdx = 0;
+    if (appState.activeMonthIdx >= appState.allMonths.length) appState.activeMonthIdx = 0;
     const currentData = appState.allMonths[appState.activeMonthIdx];
     if (!currentData || !currentData.meta || !currentData.workers) return;
 
-    const currentTheme =
-      document.documentElement.getAttribute("theme") || "dark";
-    const loggedUser = (sessionStorage.getItem("oxy_os_user") || "").toLowerCase();
-    const isAdmin = loggedUser === "admin";
+    const currentTheme = document.documentElement.getAttribute("theme") || "dark";
 
     let html = `<div class="month-controls tab-chassis" style="display:flex;">`;
     appState.allMonths.forEach((monthObj, idx) => {
       const monthName = monthObj.meta.month || `Miesiąc ${idx + 1}`;
       const isActive = idx === appState.activeMonthIdx;
-
-      html += `<button class="month-tab-btn${isActive ? " active" : ""}" data-idx="${idx}">
-                 ${monthName}
-               </button>`;
+      html += `<button class="month-tab-btn${isActive ? " active" : ""}" data-idx="${idx}">${monthName}</button>`;
     });
     html += `</div>`;
 
@@ -1033,69 +401,39 @@
     days.forEach((d, i) => {
       const wd = weekdays[i] || "";
       const isWeekend = wd === "SO" || wd === "ND";
-      const highlightStyle = isWeekend ? "color:red;" : "";
-      html += `<th class="top-header bottom-header" style="${highlightStyle}">
+      html += `<th class="top-header bottom-header day-col-header" data-d="${i}" title="Kliknij, aby sprawdzić kto ma zmianę w dniu ${d}" style="cursor: pointer; ${isWeekend ? "color:red;" : ""}">
                  ${d}<br><small style="font-size:9px;">${wd}</small>
                </th>`;
     });
 
-    html += `<th class="sum-header">Suma</th>
-             </tr>
-           </thead><tbody>`;
+    html += `<th class="sum-header">Suma</th></tr></thead><tbody>`;
 
     currentData.workers.forEach((w, wIdx) => {
       const grpCode = getWorkerGroupCode(w);
       const groupData = groupMetadata[grpCode];
       let rowStyle = "";
       if (groupData) {
-        const themeColor =
-          currentTheme === "light" ? groupData.colorLight : groupData.colorDark;
+        const themeColor = currentTheme === "light" ? groupData.colorLight : groupData.colorDark;
         rowStyle = `border-left: 3px solid ${themeColor}; color: ${themeColor};`;
       }
 
-      const workerUserKey = (w.name || "").trim().replace(/\s+/g, "_").toLowerCase();
-      const isCurrentLoggedWorker = loggedUser && loggedUser === workerUserKey;
-      const rowClass = isCurrentLoggedWorker ? ' class="active-row"' : "";
-      const nameHighlight = isCurrentLoggedWorker
-        ? ' style="color:var(--highlight-color); font-weight:700;"'
-        : "";
-
-      html += `<tr${rowClass}>
+      html += `<tr>
                 <td class="sticky-col">${w.id != null ? w.id : wIdx + 1}</td>
-                <td class="sticky-col-2 worker-name-cell" data-w="${wIdx}" style="cursor: pointer; padding:0 10px; font-weight:600; font-size:12px; background:var(--card-bg); border-bottom:1px solid var(--border-color); ${rowStyle}" title="Kliknij, aby zobaczyć kalendarz pracownika">
+                <td class="sticky-col-2 worker-name-cell" data-w="${wIdx}" style="cursor: pointer; padding:0 10px; font-weight:600; font-size:12px; background:var(--card-bg); border-bottom:1px solid var(--border-color); ${rowStyle}">
                   <div style="display: flex; align-items: center; justify-content: space-between;">
-                    <span${nameHighlight}>${w.name || "Brak"}</span>
-                    <i class="fas fa-calendar-alt" style="${isCurrentLoggedWorker
-          ? "color:var(--highlight-color); opacity:1;"
-          : "opacity: 0.3;"
-        }"></i>
+                    <span>${w.name || "Brak"}</span>
+                    <i class="fas fa-calendar-alt" style="opacity: 0.3;"></i>
                   </div>
                 </td>`;
 
       let totalHours = 0;
-
       days.forEach((day, dIdx) => {
         const displayCode = getDisplayShiftCode(w.shifts[dIdx]);
-
-        if (["1", "2"].includes(displayCode)) {
-          totalHours += 12;
-        }
+        if (["1", "2"].includes(displayCode)) totalHours += 12;
 
         const isWeekend = weekdays[dIdx] === "SO" || weekdays[dIdx] === "ND";
-        const bgStyle = isWeekend
-          ? "background-color: rgba(243, 108, 0, 0.05);"
-          : "";
-
-        const canEdit = isAdmin || isCurrentLoggedWorker;
-        const disabledAttr = canEdit ? "" : "readonly";
-
-        html += `<td class="shift-cell" style="${bgStyle}">
-                  <input type="text" class="shift-input grid-chassis-input" 
-                         data-w="${wIdx}" data-s="${dIdx}" 
-                         value="${displayCode}" 
-                         ${disabledAttr}
-                         style="${canEdit ? "" : "cursor:default;opacity:0.85;"}">
-                </td>`;
+        const bgStyle = isWeekend ? "background-color: rgba(243, 108, 0, 0.05);" : "";
+        html += `<td class="shift-cell" style="${bgStyle}"><input type="text" class="shift-input grid-chassis-input" data-w="${wIdx}" data-s="${dIdx}" value="${displayCode}"></td>`;
       });
 
       html += `<td class="sum-cell">${totalHours}h</td></tr>`;
@@ -1106,48 +444,42 @@
 
     container.querySelectorAll(".month-tab-btn").forEach((btn) => {
       btn.addEventListener("click", (e) => {
-        appState.activeMonthIdx = parseInt(e.target.dataset.idx);
+        appState.activeMonthIdx = parseInt(e.target.dataset.idx, 10);
         renderSchedule();
+      });
+    });
+
+    container.querySelectorAll(".day-col-header").forEach((th) => {
+      th.addEventListener("click", (e) => {
+        const dIdx = parseInt(e.currentTarget.dataset.d, 10);
+        openShiftListModal(dIdx);
       });
     });
 
     container.querySelectorAll(".shift-input").forEach((input) => {
       input.addEventListener("change", (e) => {
-        const w = parseInt(e.target.dataset.w);
-        const s = parseInt(e.target.dataset.s);
+        const w = parseInt(e.target.dataset.w, 10);
+        const s = parseInt(e.target.dataset.s, 10);
 
         if (!appState.allMonths[appState.activeMonthIdx].workers[w].shifts) {
           appState.allMonths[appState.activeMonthIdx].workers[w].shifts = [];
         }
-
-        appState.allMonths[appState.activeMonthIdx].workers[w].shifts[s] =
-          e.target.value;
+        appState.allMonths[appState.activeMonthIdx].workers[w].shifts[s] = e.target.value;
 
         appState.content = JSON.stringify(appState.allMonths, null, 2);
         localStorage.setItem(STORAGE_KEY, appState.content);
 
-        if (document.getElementById("json-editor")) {
-          document.getElementById("json-editor").value = appState.content;
-        }
+        const ed = document.getElementById("json-editor");
+        if (ed) ed.value = appState.content;
 
         renderSchedule();
-      });
-
-      input.addEventListener("focus", (e) => {
-        e.target.select();
-        e.target.closest("tr").style.backgroundColor = "var(--hover-bg)";
-      });
-      input.addEventListener("blur", (e) => {
-        e.target.closest("tr").style.backgroundColor = "";
       });
     });
 
     container.querySelectorAll(".worker-name-cell").forEach((cell) => {
       cell.addEventListener("click", (e) => {
-        const wIdx = parseInt(e.currentTarget.dataset.w);
-        if (typeof openWorkerCalendarModal === "function") {
-          openWorkerCalendarModal(wIdx);
-        }
+        const wIdx = parseInt(e.currentTarget.dataset.w, 10);
+        openWorkerCalendarModal(wIdx);
       });
     });
 
@@ -1155,18 +487,17 @@
   }
 
   // ==========================================
-  // KALENDARZ INDYWIDUALNY PRACOWNIKA
+  // KALENDARZ PRACOWNIKA & OBSADA ZMIAN
   // ==========================================
   function createWorkerCalendarModal() {
     if (document.getElementById("worker-cal-overlay")) return;
     const modal = document.createElement("div");
     modal.id = "worker-cal-overlay";
     modal.className = "shift-modal-overlay";
-
     modal.innerHTML = `
       <div class="shift-modal-content" style="max-width: 750px;">
         <div class="shift-modal-header">
-          <h3 class="shift-modal-title" id="worker-cal-title">Kalendarz</h3>
+          <h3 class="shift-modal-title" id="worker-cal-title">Kalendarz Pracownika</h3>
           <div class="chassis-socket"><button id="worker-cal-close" class="shift-modal-close">&times;</button></div>
         </div>
         <div id="worker-cal-body" class="shift-modal-body" style="flex-direction: column;"></div>
@@ -1174,12 +505,8 @@
     `;
     document.body.appendChild(modal);
 
-    document
-      .getElementById("worker-cal-close")
-      .addEventListener("click", () => modal.classList.remove("active"));
-    modal.addEventListener("click", (e) => {
-      if (e.target === modal) modal.classList.remove("active");
-    });
+    document.getElementById("worker-cal-close").addEventListener("click", () => modal.classList.remove("active"));
+    modal.addEventListener("click", (e) => { if (e.target === modal) modal.classList.remove("active"); });
   }
 
   function openWorkerCalendarModal(wIdx) {
@@ -1202,29 +529,20 @@
     let weekendShifts = 0;
 
     const weekMap = { PN: 0, WT: 1, SR: 2, ŚR: 2, CZ: 3, PT: 4, SO: 5, ND: 6 };
-    let firstDayOffset = 0;
-    if (weekdaysArr.length > 0) {
-      firstDayOffset = weekMap[weekdaysArr[0].toUpperCase()] || 0;
-    }
+    const firstDayOffset = weekdaysArr.length > 0 ? weekMap[weekdaysArr[0].toUpperCase()] || 0 : 0;
 
     let gridHtml = `<div class="cal-grid" style="margin-bottom: 25px;">`;
     ["PN", "WT", "ŚR", "CZ", "PT", "SO", "ND"].forEach((day) => {
       gridHtml += `<div class="cal-header">${day}</div>`;
     });
 
-    for (let i = 0; i < firstDayOffset; i++) {
-      gridHtml += `<div class="cal-cell empty"></div>`;
-    }
+    for (let i = 0; i < firstDayOffset; i++) gridHtml += `<div class="cal-cell empty"></div>`;
 
     daysArr.forEach((dayNum, idx) => {
       const shift = getDisplayShiftCode(w.shifts[idx]);
       let shiftHtml = "";
-
-      let cellClass = "cal-cell";
       const isWeekend = weekdaysArr[idx] === "SO" || weekdaysArr[idx] === "ND";
-      if (isWeekend) {
-        cellClass += " weekend";
-      }
+      let cellClass = `cal-cell ${isWeekend ? "weekend" : ""}`;
 
       if (shift === "1") {
         shiftHtml = `<div class="cal-shift day-shift">Dniówka</div>`;
@@ -1244,56 +562,22 @@
         freeDays++;
       }
 
-      gridHtml += `
-        <div class="${cellClass}">
-          <div class="cal-day-num">${dayNum}</div>
-          ${shiftHtml}
-        </div>
-      `;
+      gridHtml += `<div class="${cellClass}"><div class="cal-day-num">${dayNum}</div>${shiftHtml}</div>`;
     });
 
     const totalCells = firstDayOffset + daysArr.length;
     const remainingCells = (7 - (totalCells % 7)) % 7;
-    for (let i = 0; i < remainingCells; i++) {
-      gridHtml += `<div class="cal-cell empty"></div>`;
-    }
-
+    for (let i = 0; i < remainingCells; i++) gridHtml += `<div class="cal-cell empty"></div>`;
     gridHtml += `</div>`;
 
     const statsHtml = `
       <div class="cal-stats">
-        <div class="cal-stat-box cal-align-center hours-stat">
-          <span>Godziny</span> 
-          <strong>${totalHours}h</strong>
-        </div>
-        <div class="cal-stat-box cal-align-center shifts-stat">
-          <span>S. Zmian</span> 
-          <strong>${dCount + nCount + otherCount}</strong>
-        </div>
-        <div class="cal-stat-box cal-align-center free-stat">
-          <span>Wolne</span> 
-          <strong class="cal-success">${freeDays}</strong>
-        </div>
-        <div class="cal-stat-box cal-align-center day-stat">
-          <span>Dniówki</span> 
-          <strong class="cal-day">${dCount}</strong>
-        </div>
-        <div class="cal-stat-box cal-align-center night-stat">
-          <span>Nocki</span> 
-          <strong class="cal-night">${nCount}</strong>
-        </div>
-        <div class="cal-stat-box cal-align-center weekend-stat">
-          <span>Weekendy</span> 
-          <strong class="cal-warning">${weekendShifts}</strong>
-        </div>
-        ${otherCount > 0
-        ? `
-          <div class="cal-stat-box cal-align-center cal-other-row">
-            <span>Inne Wpisy (np. Urlop, L4)</span> 
-            <strong class="cal-other">${otherCount}</strong>
-          </div>`
-        : ""
-      }
+        <div class="cal-stat-box hours-stat"><span>Godziny</span><strong>${totalHours}h</strong></div>
+        <div class="cal-stat-box shifts-stat"><span>S. Zmian</span><strong>${dCount + nCount + otherCount}</strong></div>
+        <div class="cal-stat-box free-stat"><span>Wolne</span><strong class="cal-success">${freeDays}</strong></div>
+        <div class="cal-stat-box day-stat"><span>Dniówki</span><strong class="cal-day">${dCount}</strong></div>
+        <div class="cal-stat-box night-stat"><span>Nocki</span><strong class="cal-night">${nCount}</strong></div>
+        <div class="cal-stat-box weekend-stat"><span>Weekendy</span><strong class="cal-warning">${weekendShifts}</strong></div>
       </div>
     `;
 
@@ -1301,38 +585,97 @@
     document.getElementById("worker-cal-overlay").classList.add("active");
   }
 
-  // ==========================================
-  // MODAL LISTY OSÓB NA ZMIANIE
-  // ==========================================
+  let activeShiftModalDayIdx = 0;
+  let activeShiftFilter = "all"; // 'all' | 'day' | 'night'
+  let activeShiftSearch = "";
+
   function createShiftListModal() {
     if (document.getElementById("shift-modal-overlay")) return;
     const modal = document.createElement("div");
     modal.id = "shift-modal-overlay";
     modal.className = "shift-modal-overlay";
-
     modal.innerHTML = `
-      <div class="shift-modal-content">
-        <div class="shift-modal-header">
-          <h3 class="shift-modal-title" id="shift-modal-title">Obsada Zmianowa</h3>
-          <div class="chassis-socket"><button id="shift-modal-close" class="shift-modal-close">&times;</button></div>
+      <div class="shift-modal-content" style="max-width: 650px;">
+        <div class="shift-modal-header" style="flex-wrap: wrap; gap: 8px;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <h3 class="shift-modal-title" id="shift-modal-title" style="margin: 0;">
+              <i class="fas fa-users-viewfinder" style="color: var(--highlight-color); margin-right: 6px;"></i> Obsada
+            </h3>
+          </div>
+          <div class="modal-day-controls" style="display: flex; align-items: center; gap: 6px;">
+            <button id="shift-modal-prev-day" class="btn modal-nav-btn" title="Poprzedni dzień"><i class="fas fa-chevron-left"></i></button>
+            <button id="shift-modal-today" class="btn" style="font-size: 11px; padding: 4px 8px;" title="Przejdź do dzisiaj">Dziś</button>
+            <button id="shift-modal-next-day" class="btn modal-nav-btn" title="Następny dzień"><i class="fas fa-chevron-right"></i></button>
+            <div class="chassis-socket" style="margin-left: 6px;">
+              <button id="shift-modal-close" class="shift-modal-close">&times;</button>
+            </div>
+          </div>
         </div>
-        <div id="shift-modal-body" class="shift-modal-body"></div>
+
+        <div style="display: flex; gap: 8px; padding: 10px 14px 0 14px; flex-wrap: wrap; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-subtle);">
+          <div style="display: flex; gap: 6px;">
+            <button id="shift-filter-all" class="btn active" style="font-size: 11px; padding: 4px 10px;">Wszyscy (<span id="shift-cnt-all">0</span>)</button>
+            <button id="shift-filter-day" class="btn" style="font-size: 11px; padding: 4px 10px; color: #00d2ff;"><i class="fas fa-sun"></i> Dzień (<span id="shift-cnt-day">0</span>)</button>
+            <button id="shift-filter-night" class="btn" style="font-size: 11px; padding: 4px 10px; color: #ff0055;"><i class="fas fa-moon"></i> Noc (<span id="shift-cnt-night">0</span>)</button>
+          </div>
+          <div class="input-chassis" style="min-width: 160px; max-width: 220px; flex: 1;">
+            <input type="text" id="shift-search-input" class="shift-input tactile-input" placeholder="Szukaj osoby lub ID..." style="height: 28px; font-size: 11px; width: 100%; padding: 0 8px;">
+          </div>
+        </div>
+
+        <div id="shift-modal-body" class="shift-modal-body" style="padding: 12px 14px; max-height: 60vh; overflow-y: auto;"></div>
       </div>
     `;
     document.body.appendChild(modal);
 
-    document
-      .getElementById("shift-modal-close")
-      .addEventListener("click", () => modal.classList.remove("active"));
-    modal.addEventListener("click", (e) => {
-      if (e.target === modal) modal.classList.remove("active");
+    document.getElementById("shift-modal-close").addEventListener("click", () => modal.classList.remove("active"));
+    modal.addEventListener("click", (e) => { if (e.target === modal) modal.classList.remove("active"); });
+
+    document.getElementById("shift-modal-prev-day").addEventListener("click", () => {
+      openShiftListModal(activeShiftModalDayIdx - 1, activeShiftFilter);
     });
+
+    document.getElementById("shift-modal-next-day").addEventListener("click", () => {
+      openShiftListModal(activeShiftModalDayIdx + 1, activeShiftFilter);
+    });
+
+    document.getElementById("shift-modal-today").addEventListener("click", () => {
+      openShiftListModal(null, activeShiftFilter);
+    });
+
+    // Filtry
+    const btnAll = document.getElementById("shift-filter-all");
+    const btnDay = document.getElementById("shift-filter-day");
+    const btnNight = document.getElementById("shift-filter-night");
+    const searchInp = document.getElementById("shift-search-input");
+
+    const setFilter = (filt) => {
+      activeShiftFilter = filt;
+      [btnAll, btnDay, btnNight].forEach(b => b.classList.remove("active"));
+      if (filt === "all") btnAll.classList.add("active");
+      if (filt === "day") btnDay.classList.add("active");
+      if (filt === "night") btnNight.classList.add("active");
+      renderShiftModalList();
+    };
+
+    btnAll.addEventListener("click", () => setFilter("all"));
+    btnDay.addEventListener("click", () => setFilter("day"));
+    btnNight.addEventListener("click", () => setFilter("night"));
+
+    if (searchInp) {
+      searchInp.addEventListener("input", (e) => {
+        activeShiftSearch = (e.target.value || "").trim().toLowerCase();
+        renderShiftModalList();
+      });
+    }
   }
 
-  function openShiftListModal(eOrIdx) {
-    const modal = document.getElementById("shift-modal-overlay");
+  function renderShiftModalList() {
     const body = document.getElementById("shift-modal-body");
     const title = document.getElementById("shift-modal-title");
+    const cntAll = document.getElementById("shift-cnt-all");
+    const cntDay = document.getElementById("shift-cnt-day");
+    const cntNight = document.getElementById("shift-cnt-night");
 
     if (appState.allMonths.length === 0) return;
     const currentData = appState.allMonths[appState.activeMonthIdx];
@@ -1340,224 +683,186 @@
 
     const daysArr = currentData.meta.days || [];
     const weekdaysArr = currentData.meta.weekdays || [];
-    const todayStr = String(new Date().getDate());
-    const todayIdx = daysArr.indexOf(todayStr);
 
-    let targetIdx = typeof eOrIdx === "number" ? eOrIdx : todayIdx;
-    if (targetIdx === -1 || targetIdx >= daysArr.length) {
-      targetIdx = 0;
+    if (activeShiftModalDayIdx < 0) activeShiftModalDayIdx = 0;
+    if (activeShiftModalDayIdx >= daysArr.length) activeShiftModalDayIdx = daysArr.length - 1;
+
+    const dayNum = daysArr[activeShiftModalDayIdx] || (activeShiftModalDayIdx + 1);
+    const dayWd = weekdaysArr[activeShiftModalDayIdx] || "";
+    const isToday = String(new Date().getDate()) === String(dayNum);
+
+    if (title) {
+      title.innerHTML = `
+        <i class="fas fa-users-viewfinder" style="color: var(--highlight-color); margin-right: 6px;"></i>
+        Dzień ${dayNum} <small style="font-size: 12px; color: var(--text-muted); font-weight: normal;">(${dayWd}${isToday ? " • DZIŚ" : ""})</small>
+      `;
     }
 
-    if (daysArr.length === 0) {
-      body.innerHTML = `<div class="shift-modal-empty">Brak dni w wybranym miesiącu.</div>`;
-      modal.classList.add("active");
-      return;
-    }
-
-    let customSelectOptions = "";
-    daysArr.forEach((d, i) => {
-      const wd = weekdaysArr[i] || "";
-      const isSelected = i === targetIdx ? " selected" : "";
-      const ariaSelected = i === targetIdx ? "true" : "false";
-      customSelectOptions += `
-        <div class="option${isSelected}" data-value="${i}" role="option" aria-selected="${ariaSelected}">
-            <i class="fa-solid fa-calendar-day"></i>
-            <span>Dzień ${d} (${wd})</span>
-        </div>`;
-    });
-
-    let currentSelectedText =
-      targetIdx >= 0 && targetIdx < daysArr.length
-        ? `Dzień ${daysArr[targetIdx]} (${weekdaysArr[targetIdx] || ""})`
-        : "Wybierz dzień...";
-
-    let selectorHtml = `
-      <div class="modal-day-controls">
-        <div class="btn-bg">
-            <button id="modal-prev-day" class="btn modal-nav-btn" title="Poprzedni dzień"><i class="fas fa-chevron-left"></i></button>
-        </div>
-        <div class="custom-select wide" id="modal-day-selector-custom" data-name="modalDay">
-            <input type="hidden" name="modalDay" value="${targetIdx}">
-            <div class="select-chassis">
-                <button type="button" class="select-trigger" aria-haspopup="listbox" aria-expanded="false">
-                    <span class="trigger-content">
-                        <i class="fa-solid fa-calendar-day"></i>
-                        <span>${currentSelectedText}</span>
-                    </span>
-                    <i class="fa-solid fa-chevron-down chevron-icon"></i>
-                </button>
-            </div>
-            <div class="select-options" role="listbox">
-                ${customSelectOptions}
-            </div>
-        </div>
-        <div class="btn-bg">
-            <button id="modal-next-day" class="btn modal-nav-btn" title="Następny dzień"><i class="fas fa-chevron-right"></i></button>
-        </div>
-      </div>`;
-
-    title.innerHTML = `<div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
-        <div><i class="fas fa-users" style="color: var(--highlight-color); margin-right: 8px;"></i> Obsada</div>
-        ${selectorHtml}
-    </div>`;
-
-    setTimeout(() => {
-      const customSelectElement = document.getElementById("modal-day-selector-custom");
-      if (customSelectElement) {
-        new CustomSelect(customSelectElement, (data) => {
-          openShiftListModal(parseInt(data.value));
-        });
-      }
-
-      const btnPrev = document.getElementById("modal-prev-day");
-      const btnNext = document.getElementById("modal-next-day");
-
-      if (btnPrev) {
-        btnPrev.addEventListener("click", () => {
-          let newIdx = targetIdx - 1;
-          if (newIdx < 0) newIdx = daysArr.length - 1;
-          openShiftListModal(newIdx);
-        });
-      }
-
-      if (btnNext) {
-        btnNext.addEventListener("click", () => {
-          let newIdx = targetIdx + 1;
-          if (newIdx >= daysArr.length) newIdx = 0;
-          openShiftListModal(newIdx);
-        });
-      }
-    }, 0);
-
+    const currentTheme = document.documentElement.getAttribute("theme") || "dark";
     const dayWorkers = [];
     const nightWorkers = [];
-    const currentTheme =
-      document.documentElement.getAttribute("theme") || "dark";
 
-    currentData.workers.forEach((w) => {
-      const val = getDisplayShiftCode(w.shifts[targetIdx]);
-
-      if (val !== "") {
+    currentData.workers.forEach((w, wIdx) => {
+      const val = getDisplayShiftCode(w.shifts ? w.shifts[activeShiftModalDayIdx] : "");
+      if (val === "1" || val === "2") {
         const grpCode = getWorkerGroupCode(w);
         const groupData = groupMetadata[grpCode];
+        const color = groupData ? (currentTheme === "light" ? groupData.colorLight : groupData.colorDark) : "var(--text-muted)";
+        const groupName = groupData ? groupData.name : "";
 
-        let color = "var(--text-muted)";
-        if (groupData)
-          color =
-            currentTheme === "light"
-              ? groupData.colorLight
-              : groupData.colorDark;
+        // Wyszukiwanie
+        if (activeShiftSearch) {
+          const wName = (w.name || "").toLowerCase();
+          const wId = String(w.id != null ? w.id : "");
+          if (!wName.includes(activeShiftSearch) && !wId.includes(activeShiftSearch)) {
+            return;
+          }
+        }
 
-        const workerHtml = `
-          <div class="shift-worker-item" style="border-left: 4px solid ${color};">
-            <span class="shift-worker-name">${w.name}</span>
-            <span class="shift-worker-id">ID: ${w.id != null ? w.id : "-"}</span>
-          </div>`;
+        const item = {
+          wIdx,
+          name: w.name || "Brak",
+          id: w.id != null ? w.id : "-",
+          color,
+          groupName,
+          shift: val
+        };
 
-        if (val === "1") dayWorkers.push(workerHtml);
-        else if (val === "2") nightWorkers.push(workerHtml);
+        if (val === "1") dayWorkers.push(item);
+        else if (val === "2") nightWorkers.push(item);
       }
     });
 
-    body.innerHTML = `
-      <div class="shift-column">
-        <div class="shift-col-header day">
-          <i class="fas fa-sun"></i> DNIÓWKA (${dayWorkers.length} osób)
+    if (cntAll) cntAll.textContent = dayWorkers.length + nightWorkers.length;
+    if (cntDay) cntDay.textContent = dayWorkers.length;
+    if (cntNight) cntNight.textContent = nightWorkers.length;
+
+    const buildWorkerRow = (item) => `
+      <div class="shift-worker-item" data-w="${item.wIdx}" style="border-left: 4px solid ${item.color}; cursor: pointer;" title="Kliknij, aby otworzyć kalendarz pracownika">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span class="shift-worker-name">${item.name}</span>
+          ${item.groupName ? `<span style="font-size: 9px; padding: 1px 5px; border-radius: 3px; background: rgba(255,255,255,0.08); color: ${item.color};">${item.groupName}</span>` : ""}
         </div>
-        <div class="shift-col-list">
-          ${dayWorkers.length ? dayWorkers.join("") : "<div class='shift-empty-msg'>Brak obsady na tę zmianę</div>"}
-        </div>
-      </div>
-      <div class="shift-column">
-        <div class="shift-col-header night">
-          <i class="fas fa-moon"></i> NOCKA (${nightWorkers.length} osób)
-        </div>
-        <div class="shift-col-list">
-          ${nightWorkers.length ? nightWorkers.join("") : "<div class='shift-empty-msg'>Brak obsady na tę zmianę</div>"}
-        </div>
+        <span class="shift-worker-id">ID: ${item.id}</span>
       </div>
     `;
 
+    const showDay = activeShiftFilter === "all" || activeShiftFilter === "day";
+    const showNight = activeShiftFilter === "all" || activeShiftFilter === "night";
+
+    let html = "";
+    if (showDay) {
+      html += `
+        <div class="shift-column" style="flex: 1; min-width: 240px;">
+          <div class="shift-col-header day"><i class="fas fa-sun"></i> DNIÓWKA (${dayWorkers.length})</div>
+          <div class="shift-col-list">
+            ${dayWorkers.length ? dayWorkers.map(buildWorkerRow).join("") : "<div class='shift-empty-msg'>Brak obsady</div>"}
+          </div>
+        </div>
+      `;
+    }
+
+    if (showNight) {
+      html += `
+        <div class="shift-column" style="flex: 1; min-width: 240px;">
+          <div class="shift-col-header night"><i class="fas fa-moon"></i> NOCKA (${nightWorkers.length})</div>
+          <div class="shift-col-list">
+            ${nightWorkers.length ? nightWorkers.map(buildWorkerRow).join("") : "<div class='shift-empty-msg'>Brak obsady</div>"}
+          </div>
+        </div>
+      `;
+    }
+
+    if (!html) {
+      html = `<div class="shift-modal-empty" style="width:100%;">Brak pracowników spełniających kryteria.</div>`;
+    }
+
+    body.innerHTML = html;
+
+    // Kliknięcie w pracownika w liście otwiera jego kalendarz
+    body.querySelectorAll(".shift-worker-item").forEach(item => {
+      item.addEventListener("click", () => {
+        const wIdx = parseInt(item.dataset.w, 10);
+        if (!isNaN(wIdx)) {
+          openWorkerCalendarModal(wIdx);
+        }
+      });
+    });
+  }
+
+  function openShiftListModal(eOrIdx = null, filter = "all") {
+    createShiftListModal();
+    const modal = document.getElementById("shift-modal-overlay");
+    if (!modal) return;
+
+    if (appState.allMonths.length === 0) return;
+    const currentData = appState.allMonths[appState.activeMonthIdx];
+    if (!currentData || !currentData.workers) return;
+
+    const daysArr = currentData.meta.days || [];
+    const todayStr = String(new Date().getDate());
+    const todayIdx = daysArr.indexOf(todayStr);
+
+    if (typeof eOrIdx === "number") {
+      activeShiftModalDayIdx = eOrIdx;
+    } else if (eOrIdx == null) {
+      activeShiftModalDayIdx = todayIdx !== -1 ? todayIdx : 0;
+    }
+
+    if (filter) {
+      activeShiftFilter = filter;
+      const btnAll = document.getElementById("shift-filter-all");
+      const btnDay = document.getElementById("shift-filter-day");
+      const btnNight = document.getElementById("shift-filter-night");
+      if (btnAll && btnDay && btnNight) {
+        [btnAll, btnDay, btnNight].forEach(b => b.classList.remove("active"));
+        if (filter === "all") btnAll.classList.add("active");
+        if (filter === "day") btnDay.classList.add("active");
+        if (filter === "night") btnNight.classList.add("active");
+      }
+    }
+
+    renderShiftModalList();
     modal.classList.add("active");
   }
 
   // ==========================================
-  // WYKRESY I STATYSTYKI DASHBOARDU
+  // WYKRESY CHART.JS & SPARKLINE
   // ==========================================
   let charts = {};
 
   function initCharts() {
     if (typeof Chart === "undefined") return;
+    const isLight = document.documentElement.getAttribute("theme") === "light";
+    const labelColor = isLight ? "#4b5563" : "#858585";
+    const gridColor = isLight ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.05)";
+
     Chart.defaults.font.family = "var(--font-main)";
-    Chart.defaults.color =
-      getComputedStyle(document.documentElement)
-        .getPropertyValue("--text-color")
-        .trim() || "#e0e0e0";
+    Chart.defaults.color = labelColor;
 
-    const mainStatsEl = document.getElementById("mainStatsChart");
-    if (mainStatsEl) {
-      const cardTitle = mainStatsEl.closest(".card")?.querySelector(".card-title");
-      if (cardTitle) cardTitle.textContent = "Rozkład Godzin Pracowników";
-
-      const ctxMain = mainStatsEl.getContext("2d");
-      let gradientMain = ctxMain.createLinearGradient(0, 0, 0, 300);
-      gradientMain.addColorStop(0, "rgba(220, 38, 38, 0.45)");
-      gradientMain.addColorStop(0.5, "rgba(243, 108, 0, 0.45)");
-      gradientMain.addColorStop(1, "rgba(34, 197, 94, 0.5)");
-
-      charts.main = new Chart(ctxMain, {
+    const mainEl = document.getElementById("mainStatsChart");
+    if (mainEl) {
+      charts.main = new Chart(mainEl.getContext("2d"), {
         type: "bar",
         data: {
           labels: [],
-          datasets: [
-            {
-              label: "Przepracowane godziny",
-              data: [],
-              backgroundColor: gradientMain,
-              borderColor:
-                getComputedStyle(document.documentElement)
-                  .getPropertyValue("--text-color")
-                  .trim() || "#e0e0e0",
-              borderWidth: { top: 2, right: 0, bottom: 0, left: 0 },
-              borderRadius: 0,
-              barThickness: "flex",
-              maxBarThickness: 40,
-            },
-          ],
+          datasets: [{
+            label: "Godziny",
+            data: [],
+            backgroundColor: "rgba(243, 108, 0, 0.55)",
+            borderColor: "#f36c00",
+            borderWidth: 1
+          }]
         },
         options: {
           responsive: true,
           maintainAspectRatio: false,
-          plugins: {
-            legend: { display: false },
-            tooltip: {
-              backgroundColor: "rgba(0,0,0,0.8)",
-              titleFont: { size: 13 },
-              bodyFont: { size: 12 },
-              callbacks: {
-                label: function (context) {
-                  return context.parsed.y + " godzin";
-                },
-              },
-            },
-          },
+          plugins: { legend: { display: false } },
           scales: {
-            x: {
-              grid: { display: false, drawBorder: false },
-              ticks: {
-                font: { family: "var(--font-main)", size: 10 },
-                maxRotation: 45,
-                minRotation: 0,
-                color: "#ccc",
-              },
-            },
-            y: {
-              beginAtZero: true,
-              grid: { color: "rgba(17,17,17,0.08)", borderDash: [5, 5] },
-              ticks: { color: "#ccc" },
-            },
-          },
-        },
+            x: { grid: { color: gridColor }, ticks: { color: labelColor } },
+            y: { grid: { color: gridColor }, ticks: { color: labelColor } }
+          }
+        }
       });
     }
 
@@ -1567,51 +872,27 @@
         type: "bar",
         data: {
           labels: ["Brak"],
-          datasets: [
-            {
-              data: [0],
-              backgroundColor: [
-                "#f36c00", "#3b82f6", "#af5308", "#ffc107", "#17a2b8", "#28a745"
-              ],
-            },
-          ],
+          datasets: [{
+            data: [0],
+            backgroundColor: ["#f36c00", "#3b82f6", "#10b981", "#f59e0b", "#06b6d4", "#ef4444"]
+          }]
         },
         options: {
           indexAxis: "y",
           responsive: true,
           maintainAspectRatio: false,
           plugins: { legend: { display: false } },
-          scales: { x: { display: false }, y: { grid: { display: false } } },
-        },
+          scales: {
+            x: { grid: { color: gridColor }, ticks: { color: labelColor } },
+            y: { grid: { display: false }, ticks: { color: labelColor } }
+          }
+        }
       });
     }
 
     const waveEl = document.getElementById("waveChart");
     if (waveEl) {
-      const cardTitle = waveEl.closest(".card")?.querySelector(".card-title");
-      if (cardTitle) cardTitle.textContent = "Obsada Zmianowa (Dzień vs Noc)";
-
-      const legendIn = waveEl
-        .closest(".card")
-        ?.querySelector(".legend-area .legend-item:nth-child(1)");
-      if (legendIn)
-        legendIn.innerHTML = '<span class="legend-dot bg-blue"></span> Dzień';
-      const legendOut = waveEl
-        .closest(".card")
-        ?.querySelector(".legend-area .legend-item:nth-child(2)");
-      if (legendOut)
-        legendOut.innerHTML = '<span class="legend-dot bg-red"></span> Noc';
-
-      const ctx = waveEl.getContext("2d");
-      let gradientDay = ctx.createLinearGradient(0, 0, 0, 300);
-      gradientDay.addColorStop(0, "rgba(255, 255, 255, 0.04)");
-      gradientDay.addColorStop(1, "rgba(0, 210, 255, 0.0)");
-
-      let gradientNight = ctx.createLinearGradient(0, 0, 0, 300);
-      gradientNight.addColorStop(0, "rgba(255, 255, 255, 0.04)");
-      gradientNight.addColorStop(1, "rgba(255, 0, 85, 0.0)");
-
-      charts.wave = new Chart(ctx, {
+      charts.wave = new Chart(waveEl.getContext("2d"), {
         type: "line",
         data: {
           labels: [],
@@ -1620,90 +901,113 @@
               label: "Dzień",
               data: [],
               borderColor: "#00d2ff",
-              borderWidth: 3,
-              tension: 0.4,
-              pointRadius: 2,
+              backgroundColor: "rgba(0, 210, 255, 0.1)",
+              borderWidth: 2,
               fill: true,
-              backgroundColor: gradientDay,
+              tension: 0.3
             },
             {
               label: "Noc",
               data: [],
               borderColor: "#ff0055",
-              borderWidth: 3,
-              tension: 0.5,
-              pointRadius: 2,
+              backgroundColor: "rgba(255, 0, 85, 0.1)",
+              borderWidth: 2,
               fill: true,
-              backgroundColor: gradientNight,
-            },
-          ],
+              tension: 0.3
+            }
+          ]
         },
         options: {
           responsive: true,
           maintainAspectRatio: false,
-          plugins: {
-            legend: { display: false },
-            tooltip: {
-              mode: "index",
-              intersect: false,
-              backgroundColor: "rgba(0,0,0,0.8)",
-            },
+          plugins: { legend: { display: false } },
+          onClick: (evt, elements) => {
+            if (elements && elements.length > 0) {
+              const clickedIdx = elements[0].index;
+              openShiftListModal(clickedIdx);
+            }
           },
           scales: {
-            x: {
-              display: true,
-              grid: { display: false, drawBorder: false },
-              ticks: { maxTicksLimit: 15 },
-            },
-            y: {
-              display: true,
-              beginAtZero: true,
-              grid: { color: "rgba(200,200,200,0.1)" },
-              ticks: { stepSize: 1 },
-            },
-          },
-          interaction: { mode: "nearest", axis: "x", intersect: false },
-        },
+            x: { grid: { color: gridColor }, ticks: { color: labelColor } },
+            y: { grid: { color: gridColor }, ticks: { color: labelColor } }
+          }
+        }
       });
     }
 
-    const inEl = document.getElementById("incomeSparkline");
-    if (inEl) {
-      charts.sparkDay = new Chart(inEl.getContext("2d"), {
+    // Sparkline Dniówka
+    const incEl = document.getElementById("incomeSparkline");
+    if (incEl) {
+      charts.income = new Chart(incEl.getContext("2d"), {
         type: "line",
         data: {
           labels: [],
-          datasets: [{ data: [], borderColor: "#4ade80", tension: 0.4 }],
+          datasets: [{
+            data: [],
+            borderColor: "#10b981",
+            backgroundColor: "rgba(16, 185, 129, 0.15)",
+            borderWidth: 2,
+            fill: true,
+            pointRadius: 0,
+            tension: 0.35
+          }]
         },
         options: {
-          plugins: { legend: { display: false }, tooltip: { enabled: false } },
-          scales: {
-            x: { display: false },
-            y: { display: false, beginAtZero: true },
-          },
+          responsive: true,
           maintainAspectRatio: false,
-        },
+          plugins: { legend: { display: false }, tooltip: { enabled: false } },
+          scales: { x: { display: false }, y: { display: false } }
+        }
       });
     }
 
+    // Sparkline Nocka
     const outEl = document.getElementById("outcomeSparkline");
     if (outEl) {
-      charts.sparkNight = new Chart(outEl.getContext("2d"), {
+      charts.outcome = new Chart(outEl.getContext("2d"), {
         type: "line",
         data: {
           labels: [],
-          datasets: [{ data: [], borderColor: "#ff0055", tension: 0.4 }],
+          datasets: [{
+            data: [],
+            borderColor: "#ef4444",
+            backgroundColor: "rgba(239, 68, 68, 0.15)",
+            borderWidth: 2,
+            fill: true,
+            pointRadius: 0,
+            tension: 0.35
+          }]
         },
         options: {
-          plugins: { legend: { display: false }, tooltip: { enabled: false } },
-          scales: {
-            x: { display: false },
-            y: { display: false, beginAtZero: true },
-          },
+          responsive: true,
           maintainAspectRatio: false,
-        },
+          plugins: { legend: { display: false }, tooltip: { enabled: false } },
+          scales: { x: { display: false }, y: { display: false } }
+        }
       });
     }
+  }
+
+  function updateChartTheme() {
+    if (typeof Chart === "undefined") return;
+    const isLight = document.documentElement.getAttribute("theme") === "light";
+    const labelColor = isLight ? "#4b5563" : "#858585";
+    const gridColor = isLight ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.05)";
+
+    Chart.defaults.color = labelColor;
+    [charts.main, charts.wallet, charts.wave].forEach((ch) => {
+      if (ch && ch.options && ch.options.scales) {
+        if (ch.options.scales.x) {
+          if (ch.options.scales.x.grid) ch.options.scales.x.grid.color = gridColor;
+          if (ch.options.scales.x.ticks) ch.options.scales.x.ticks.color = labelColor;
+        }
+        if (ch.options.scales.y) {
+          if (ch.options.scales.y.grid) ch.options.scales.y.grid.color = gridColor;
+          if (ch.options.scales.y.ticks) ch.options.scales.y.ticks.color = labelColor;
+        }
+        ch.update();
+      }
+    });
   }
 
   function syncDashboardCharts() {
@@ -1715,260 +1019,112 @@
     let shiftCounts = {};
     const daysArr = currentData.meta.days || [];
     const weekdaysArr = currentData.meta.weekdays || [];
-
     const dailyDayCount = new Array(daysArr.length).fill(0);
     const dailyNightCount = new Array(daysArr.length).fill(0);
 
     currentData.workers.forEach((w) => {
       daysArr.forEach((_, dIdx) => {
         const val = getDisplayShiftCode(w.shifts[dIdx]);
-
         if (val !== "") {
           if (["1", "2"].includes(val)) totalHours += 12;
           shiftCounts[val] = (shiftCounts[val] || 0) + 1;
-
-          if (val === "1") {
-            dailyDayCount[dIdx]++;
-          } else if (val === "2") {
-            dailyNightCount[dIdx]++;
-          }
+          if (val === "1") dailyDayCount[dIdx]++;
+          else if (val === "2") dailyNightCount[dIdx]++;
         }
       });
     });
 
-    const todayStr = String(new Date().getDate());
+    // 1. Karta czasu w sidebarze
+    const todayNum = new Date().getDate();
+    const todayStr = String(todayNum);
     const todayIdx = daysArr.indexOf(todayStr);
-    let dayToday = 0;
-    let nightToday = 0;
-    let dayYesterday = 0;
-    let nightYesterday = 0;
-
-    if (todayIdx !== -1) {
-      dayToday = dailyDayCount[todayIdx];
-      nightToday = dailyNightCount[todayIdx];
-      if (todayIdx > 0) {
-        dayYesterday = dailyDayCount[todayIdx - 1];
-        nightYesterday = dailyNightCount[todayIdx - 1];
-      }
-    }
-
-    const widget1Card = document.querySelector(".widget-card:nth-child(1)");
-    const widget2Card = document.querySelector(".widget-card:nth-child(2)");
-
-    if (widget1Card) {
-      const wAmt = widget1Card.querySelector(".widget-amount");
-      const wLbl = widget1Card.querySelector(".widget-label");
-      const trendEl = widget1Card.querySelector(".widget-trend");
-
-      if (wAmt) wAmt.innerHTML = `${dayToday} <span class="cents">osób</span>`;
-      if (wLbl) wLbl.innerText = "Dniówka (Dziś)";
-
-      if (trendEl) {
-        const diff = dayToday - dayYesterday;
-        if (diff > 0) {
-          trendEl.className = "widget-trend text-green";
-          trendEl.innerHTML = `<i class="fas fa-caret-up"></i> <span>+${diff} od wczoraj</span>`;
-        } else if (diff < 0) {
-          trendEl.className = "widget-trend text-red";
-          trendEl.innerHTML = `<i class="fas fa-caret-down"></i> <span>${diff} od wczoraj</span>`;
-        } else {
-          trendEl.className = "widget-trend";
-          trendEl.style.color = "var(--text-muted)";
-          trendEl.innerHTML = `<i class="fas fa-minus"></i> <span>Brak zmian</span>`;
-        }
-      }
-
-      if (!widget1Card.dataset.modalBound) {
-        widget1Card.dataset.modalBound = "true";
-        widget1Card.style.cursor = "pointer";
-        widget1Card.title = "Kliknij, aby zobaczyć kto idzie na zmianę";
-        widget1Card.addEventListener("click", openShiftListModal);
-
-        const hint = document.createElement("div");
-        hint.className = "widget-hint";
-        hint.innerHTML = '<i class="fas fa-list"></i> Zobacz listę osób';
-        widget1Card.appendChild(hint);
-      }
-    }
-
-    if (widget2Card) {
-      const wAmt = widget2Card.querySelector(".widget-amount");
-      const wLbl = widget2Card.querySelector(".widget-label");
-      const trendEl = widget2Card.querySelector(".widget-trend");
-      const iconWrap = widget2Card.querySelector(".widget-icon");
-
-      if (wAmt) wAmt.innerHTML = `${nightToday} <span class="cents">osób</span>`;
-      if (wLbl) wLbl.innerText = "Nocka (Dziś)";
-
-      if (iconWrap) {
-        iconWrap.className = "widget-icon";
-        iconWrap.style.backgroundColor = "rgba(255, 0, 85, 0.15)";
-        iconWrap.style.color = "#ff0055";
-        iconWrap.innerHTML = '<i class="fas fa-moon"></i>';
-      }
-
-      if (trendEl) {
-        const diff = nightToday - nightYesterday;
-        if (diff > 0) {
-          trendEl.className = "widget-trend text-green";
-          trendEl.innerHTML = `<i class="fas fa-caret-up"></i> <span>+${diff} od wczoraj</span>`;
-        } else if (diff < 0) {
-          trendEl.className = "widget-trend text-red";
-          trendEl.innerHTML = `<i class="fas fa-caret-down"></i> <span>${diff} od wczoraj</span>`;
-        } else {
-          trendEl.className = "widget-trend";
-          trendEl.style.color = "var(--text-muted)";
-          trendEl.innerHTML = `<i class="fas fa-minus"></i> <span>Brak zmian</span>`;
-        }
-      }
-
-      if (!widget2Card.dataset.modalBound) {
-        widget2Card.dataset.modalBound = "true";
-        widget2Card.style.cursor = "pointer";
-        widget2Card.title = "Kliknij, aby zobaczyć kto idzie na zmianę";
-        widget2Card.addEventListener("click", openShiftListModal);
-
-        const hint = document.createElement("div");
-        hint.className = "widget-hint";
-        hint.innerHTML = '<i class="fas fa-list"></i> Zobacz listę osób';
-        widget2Card.appendChild(hint);
-      }
-    }
-
-    const sparkLabels = [];
-    const sparkDayData = [];
-    const sparkNightData = [];
-
-    const endIdx = todayIdx !== -1 ? todayIdx : daysArr.length - 1;
-    const startIdx = Math.max(0, endIdx - 6);
-
-    for (let i = startIdx; i <= endIdx; i++) {
-      sparkLabels.push(daysArr[i]);
-      sparkDayData.push(dailyDayCount[i]);
-      sparkNightData.push(dailyNightCount[i]);
-    }
-
-    if (charts.sparkDay) {
-      charts.sparkDay.data.labels = sparkLabels;
-      charts.sparkDay.data.datasets[0].data = sparkDayData;
-      charts.sparkDay.update();
-    }
-
-    if (charts.sparkNight) {
-      charts.sparkNight.data.labels = sparkLabels;
-      charts.sparkNight.data.datasets[0].data = sparkNightData;
-      charts.sparkNight.update();
-    }
+    const resolvedIdx = todayIdx !== -1 ? todayIdx : (daysArr.length > 0 ? 0 : -1);
 
     const tcMonth = document.getElementById("tc-month");
-    const tcDay = document.getElementById("tc-day");
     const tcTotalDays = document.getElementById("tc-total-days");
-
-    if (tcMonth)
-      tcMonth.textContent =
-        currentData.meta.month || `Miesiąc ${appState.activeMonthIdx + 1}`;
+    const tcDay = document.getElementById("tc-day");
+    if (tcMonth) tcMonth.textContent = currentData.meta.month || "Miesiąc";
     if (tcTotalDays) tcTotalDays.textContent = daysArr.length;
-
-    if (tcDay) {
-      if (todayIdx !== -1) {
-        tcDay.textContent = `${daysArr[todayIdx]} (${weekdaysArr[todayIdx] || ""})`;
-      } else {
-        tcDay.textContent = "Poza zakresem";
-      }
+    if (tcDay && resolvedIdx !== -1) {
+      const wd = weekdaysArr[resolvedIdx] || "";
+      tcDay.textContent = `${daysArr[resolvedIdx]} ${wd}`.trim();
     }
 
-    const lastUpdateEl = document.getElementById("last-update-time");
-    if (lastUpdateEl) {
-      if (currentData.meta && currentData.meta.generated) {
-        try {
-          const d = new Date(currentData.meta.generated);
-          const formatted = d.toLocaleString("pl-PL", {
-            day: "2-digit",
-            month: "2-digit",
-            year: "numeric",
-            hour: "2-digit",
-            minute: "2-digit",
-          });
-          lastUpdateEl.innerHTML = `<i class="fas fa-clock" style="margin-right: 5px;"></i> ${formatted}`;
-        } catch (e) {
-          lastUpdateEl.innerHTML = `<i class="fas fa-clock" style="margin-right: 5px;"></i> Nieznana data`;
+    // 2. Widżety Dniówka i Nocka (Dziś)
+    const todayDayStaff = resolvedIdx !== -1 ? (dailyDayCount[resolvedIdx] || 0) : 0;
+    const todayNightStaff = resolvedIdx !== -1 ? (dailyNightCount[resolvedIdx] || 0) : 0;
+
+    const dayCountEl = document.getElementById("widget-day-count");
+    const nightCountEl = document.getElementById("widget-night-count");
+    if (dayCountEl) dayCountEl.innerHTML = `${todayDayStaff} <span class="cents">osób</span>`;
+    if (nightCountEl) nightCountEl.innerHTML = `${todayNightStaff} <span class="cents">osób</span>`;
+
+    // Trendy vs wczoraj
+    if (resolvedIdx > 0) {
+      const prevDayStaff = dailyDayCount[resolvedIdx - 1] || 0;
+      const prevNightStaff = dailyNightCount[resolvedIdx - 1] || 0;
+      const dayDiff = todayDayStaff - prevDayStaff;
+      const nightDiff = todayNightStaff - prevNightStaff;
+
+      const dayTrendEl = document.getElementById("widget-day-trend");
+      if (dayTrendEl) {
+        if (dayDiff > 0) {
+          dayTrendEl.className = "widget-trend text-green";
+          dayTrendEl.innerHTML = `<i class="fas fa-arrow-up"></i> <span>+${dayDiff} vs wczoraj</span>`;
+        } else if (dayDiff < 0) {
+          dayTrendEl.className = "widget-trend text-red";
+          dayTrendEl.innerHTML = `<i class="fas fa-arrow-down"></i> <span>${dayDiff} vs wczoraj</span>`;
+        } else {
+          dayTrendEl.className = "widget-trend text-green";
+          dayTrendEl.innerHTML = `<i class="fas fa-minus"></i> <span>Stabilna obsada</span>`;
         }
-      } else {
-        lastUpdateEl.innerHTML = `<i class="fas fa-clock" style="margin-right: 5px;"></i> Brak danych`;
+      }
+
+      const nightTrendEl = document.getElementById("widget-night-trend");
+      if (nightTrendEl) {
+        if (nightDiff > 0) {
+          nightTrendEl.className = "widget-trend text-green";
+          nightTrendEl.innerHTML = `<i class="fas fa-arrow-up"></i> <span>+${nightDiff} vs wczoraj</span>`;
+        } else if (nightDiff < 0) {
+          nightTrendEl.className = "widget-trend text-red";
+          nightTrendEl.innerHTML = `<i class="fas fa-arrow-down"></i> <span>${nightDiff} vs wczoraj</span>`;
+        } else {
+          nightTrendEl.className = "widget-trend text-red";
+          nightTrendEl.innerHTML = `<i class="fas fa-minus"></i> <span>Stabilna obsada</span>`;
+        }
       }
     }
 
-    const systemInfoList = document.getElementById("system-info-list");
-    if (systemInfoList) {
-      systemInfoList.innerHTML = `
-        <div class="transaction-item">
-          <div class="transaction-left">
-            <div class="transaction-icon icon-purple">
-              <i class="fas fa-users"></i>
-            </div>
-            <div>
-              <p class="transaction-title">Liczba Pracowników</p>
-              <p class="transaction-date">W tym grafiku</p>
-            </div>
-          </div>
-          <p class="transaction-amount amount-green" style="font-size:16px;">${currentData.workers.length}</p>
-        </div>
-        <div class="transaction-item">
-          <div class="transaction-left">
-            <div class="transaction-icon icon-green-alt">
-              <i class="fas fa-calendar-alt"></i>
-            </div>
-            <div>
-              <p class="transaction-title">Aktywny Miesiąc</p>
-              <p class="transaction-date">${daysArr.length} dni</p>
-            </div>
-          </div>
-          <p class="transaction-amount" style="color:var(--text-color); font-size:14px;">${currentData.meta.month || "Brak"}</p>
-        </div>
-        <div class="transaction-item">
-          <div class="transaction-left">
-            <div class="transaction-icon" style="background: rgba(243, 108, 0, 0.15); color: #f36c00;">
-              <i class="fas fa-clock"></i>
-            </div>
-            <div>
-              <p class="transaction-title">Łącznie Zaplanowano</p>
-              <p class="transaction-date">Godziny całego zespołu</p>
-            </div>
-          </div>
-          <p class="transaction-amount amount-green" style="font-size:14px;">${totalHours}h</p>
-        </div>
-      `;
+    // 3. Sparklines
+    if (charts.income) {
+      charts.income.data.labels = daysArr;
+      charts.income.data.datasets[0].data = dailyDayCount;
+      charts.income.update();
+    }
+    if (charts.outcome) {
+      charts.outcome.data.labels = daysArr;
+      charts.outcome.data.datasets[0].data = dailyNightCount;
+      charts.outcome.update();
     }
 
+    // 4. Główne wykresy
     if (charts.main) {
-      const workerNames = [];
-      const workerHours = [];
-
-      currentData.workers.forEach((w) => {
+      charts.main.data.labels = currentData.workers.map((w) => (w.name ? w.name.split(" ")[0] : `ID:${w.id}`));
+      charts.main.data.datasets[0].data = currentData.workers.map((w) => {
         let h = 0;
         daysArr.forEach((_, dIdx) => {
-          const val = getDisplayShiftCode(w.shifts[dIdx]);
-          if (["1", "2"].includes(val)) h += 12;
+          if (["1", "2"].includes(getDisplayShiftCode(w.shifts[dIdx]))) h += 12;
         });
-
-        const shortName = w.name ? w.name.split(" ")[0] : `ID:${w.id}`;
-        workerNames.push(shortName);
-        workerHours.push(h);
+        return h;
       });
-
-      charts.main.data.labels = workerNames;
-      charts.main.data.datasets[0].data = workerHours;
       charts.main.update();
     }
 
     if (charts.wallet) {
-      const sortedShifts = Object.entries(shiftCounts)
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 6);
-      while (sortedShifts.length < 6) sortedShifts.push(["-", 0]);
-
-      charts.wallet.data.labels = sortedShifts.map((s) => s[0]);
-      charts.wallet.data.datasets[0].data = sortedShifts.map((s) => s[1]);
+      const sorted = Object.entries(shiftCounts).sort((a, b) => b[1] - a[1]).slice(0, 6);
+      while (sorted.length < 6) sorted.push(["-", 0]);
+      charts.wallet.data.labels = sorted.map((s) => s[0]);
+      charts.wallet.data.datasets[0].data = sorted.map((s) => s[1]);
       charts.wallet.update();
     }
 
@@ -1978,190 +1134,891 @@
       charts.wave.data.datasets[1].data = dailyNightCount;
       charts.wave.update();
     }
+
+    // 5. Ostatnia aktualizacja i system info w sidebarze
+    const lastUpdateEl = document.getElementById("last-update-time");
+    if (lastUpdateEl) {
+      const nowStr = new Date().toLocaleTimeString("pl-PL", { hour: "2-digit", minute: "2-digit" });
+      lastUpdateEl.innerHTML = `
+        <span class="led-indicator ${serverOnline ? "active" : ""}"></span>
+        <i class="fas fa-clock last-update-icon"></i> Dziś, ${nowStr}
+      `;
+    }
+
+    const sysInfoList = document.getElementById("system-info-list");
+    if (sysInfoList) {
+      sysInfoList.innerHTML = `
+        <div class="transaction-item" style="display:flex; align-items:center; gap:10px; padding:6px 0; border-bottom:1px solid var(--border-subtle);">
+          <div class="widget-icon ${serverOnline ? "icon-bg-green" : "icon-bg-red"}" style="width:28px; height:28px; font-size:12px; display:flex; align-items:center; justify-content:center;">
+            <i class="fas ${serverOnline ? "fa-shield-halved" : "fa-shield"}"></i>
+          </div>
+          <div style="flex:1;">
+            <div style="font-size:11px; font-weight:700; color:var(--text-color);">Autoryzacja Serwera</div>
+            <div style="font-size:10px; color:var(--text-muted); font-family:var(--font-tech);">${serverOnline ? "ONLINE (Bcrypt Express :3000)" : "OFFLINE (Pamięć lokalna)"}</div>
+          </div>
+        </div>
+        <div class="transaction-item" style="display:flex; align-items:center; gap:10px; padding:6px 0; border-bottom:1px solid var(--border-subtle);">
+          <div class="widget-icon icon-bg-blue" style="width:28px; height:28px; font-size:12px; display:flex; align-items:center; justify-content:center;">
+            <i class="fas fa-users"></i>
+          </div>
+          <div style="flex:1;">
+            <div style="font-size:11px; font-weight:700; color:var(--text-color);">Pracownicy w Bazie</div>
+            <div style="font-size:10px; color:var(--text-muted); font-family:var(--font-tech);">${currentData.workers.length} osób w grafiku</div>
+          </div>
+        </div>
+        <div class="transaction-item" style="display:flex; align-items:center; gap:10px; padding:6px 0;">
+          <div class="widget-icon icon-bg-green" style="width:28px; height:28px; font-size:12px; display:flex; align-items:center; justify-content:center;">
+            <i class="fas fa-business-time"></i>
+          </div>
+          <div style="flex:1;">
+            <div style="font-size:11px; font-weight:700; color:var(--text-color);">Suma Godzin Miesiąca</div>
+            <div style="font-size:10px; color:var(--text-muted); font-family:var(--font-tech);">${totalHours} roboczogodzin</div>
+          </div>
+        </div>
+      `;
+    }
   }
 
   // ==========================================
-  // SYNCHRONIZACJA Z GITHUB & MOTYW
+  // KOMUNIKACJA Z BACKENDEM EXPRESS (SERVER.JS) & RENDER.COM
   // ==========================================
-  const btnCloud =
-    document.getElementById("btn-cloud-fetch") ||
-    document.querySelector('[title*="GitHub"]');
+  function getApiBase() {
+    const custom = localStorage.getItem("oxy_render_url");
+    if (custom && custom.trim()) {
+      return custom.trim().replace(/\/+$/, "");
+    }
+    // Automatyczna detekcja:
+    if (window.location.protocol.startsWith("http")) {
+      // Jeśli uruchomiony lokalnie
+      if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") {
+        return window.location.port === "3000" ? "" : "http://localhost:3000";
+      }
+      // Jeśli uruchomiony na Renderze (np. *.onrender.com) lub innym serwerze Node.js:
+      // Zapytania względne "" (/api/...) łączą się z bieżącym serwerem bez problemów CORS/Mixed-Content!
+      if (!window.location.hostname.endsWith("github.io")) {
+        return "";
+      }
+    }
+    // Fallback dla podglądu bezpośredniego z dysku (file://) lub GitHub Pages
+    return "http://localhost:3000";
+  }
 
-  if (btnCloud) {
-    btnCloud.addEventListener("click", async () => {
-      const iconDest = document.getElementById("icon-cloud-download-dest");
+  let serverOnline = false;
+  let serverUsersCache = [];
 
-      if (iconDest) {
-        iconDest.innerHTML =
-          '<i class="fas fa-spinner fa-spin" style="font-size: 20px;"></i>';
+  async function apiRequest(endpoint, method = "GET", body = null) {
+    try {
+      const opts = {
+        method,
+        headers: { "Content-Type": "application/json" }
+      };
+      if (body) opts.body = JSON.stringify(body);
+      const apiBase = getApiBase();
+      const res = await fetch(`${apiBase}${endpoint}`, opts);
+      const data = await res.json().catch(() => ({}));
+      return { ok: res.ok, status: res.status, data };
+    } catch (err) {
+      return { ok: false, status: 0, data: null, error: err.message };
+    }
+  }
+
+  async function checkServerStatus() {
+    const res = await apiRequest("/api/status");
+    const badge = document.getElementById("server-status-badge");
+    const textEl = document.getElementById("server-status-text");
+    const modalStatus = document.getElementById("server-modal-status-text");
+    const modalDetails = document.getElementById("server-modal-details");
+
+    const currentBase = getApiBase() || window.location.origin;
+
+    if (res.ok && res.data && res.data.success) {
+      serverOnline = true;
+      if (badge) {
+        badge.classList.remove("offline");
+        badge.classList.add("online");
+        badge.title = `Połączono z serwerem OXY_OS v${res.data.version} (${currentBase})`;
+      }
+      if (textEl) textEl.textContent = "ONLINE";
+      if (modalStatus) {
+        modalStatus.textContent = "ONLINE";
+        modalStatus.style.color = "var(--success-color)";
+      }
+      if (modalDetails) {
+        modalDetails.textContent = `Połączono z: ${currentBase} (v${res.data.version}, użytkownicy: ${res.data.usersCount})`;
+      }
+      return true;
+    } else {
+      serverOnline = false;
+      if (badge) {
+        badge.classList.remove("online");
+        badge.classList.add("offline");
+        badge.title = `Brak połączenia z backendem (${currentBase}). Kliknij, aby skonfigurować URL.`;
+      }
+      if (textEl) textEl.textContent = "OFFLINE";
+      if (modalStatus) {
+        modalStatus.textContent = "OFFLINE";
+        modalStatus.style.color = "var(--danger-color)";
+      }
+      if (modalDetails) {
+        modalDetails.textContent = `Nie można nawiązać połączenia z: ${currentBase}. Kliknij ZAPISZ I POŁĄCZ po wpisaniu adresu Render.`;
+      }
+      return false;
+    }
+  }
+
+  function initServerConfigModal() {
+    const badge = document.getElementById("server-status-badge");
+    const modal = document.getElementById("server-config-modal");
+    const closeBtn = document.getElementById("server-config-close");
+    const inputUrl = document.getElementById("input-api-url");
+    const btnSave = document.getElementById("btn-save-api-url");
+    const btnReset = document.getElementById("btn-reset-api-url");
+
+    if (badge && modal) {
+      badge.style.cursor = "pointer";
+      badge.addEventListener("click", () => {
+        const savedUrl = localStorage.getItem("oxy_render_url") || "";
+        if (inputUrl) inputUrl.value = savedUrl;
+        checkServerStatus();
+        modal.classList.add("active");
+      });
+    }
+
+    if (closeBtn && modal) {
+      closeBtn.addEventListener("click", () => modal.classList.remove("active"));
+      modal.addEventListener("click", (e) => {
+        if (e.target === modal) modal.classList.remove("active");
+      });
+    }
+
+    if (btnSave) {
+      btnSave.addEventListener("click", async () => {
+        const val = (inputUrl?.value || "").trim();
+        if (val) {
+          localStorage.setItem("oxy_render_url", val);
+        } else {
+          localStorage.removeItem("oxy_render_url");
+        }
+        oxyAlert("Zapisano adres backendu. Sprawdzam połączenie...", "info", "SERWER");
+        const ok = await checkServerStatus();
+        if (ok) {
+          oxyAlert("Połączono pomyślnie z backendem!", "success", "POŁĄCZONO");
+          if (modal) modal.classList.remove("active");
+        } else {
+          oxyAlert("Brak odpowiedzi z podanego adresu. Upewnij się, że instancja na Renderze jest wybudzona (w darmowym planie może to zająć do 30 sekund).", "warning", "STATUS SERWERA");
+        }
+      });
+    }
+
+    if (btnReset) {
+      btnReset.addEventListener("click", async () => {
+        localStorage.removeItem("oxy_render_url");
+        if (inputUrl) inputUrl.value = "";
+        oxyAlert("Przywrócono automatyczne wykrywanie adresu serwera.", "info", "SERWER");
+        await checkServerStatus();
+        if (modal) modal.classList.remove("active");
+      });
+    }
+  }
+
+  // ==========================================
+  // ZARZĄDZANIE UŻYTKOWNIKAMI & LOGOWANIE
+  // ==========================================
+  function initLoginSystem() {
+    const USERS_KEY = "oxy_os_users";
+    const SESSION_KEY = "oxy_os_user";
+
+    if (!localStorage.getItem(USERS_KEY)) {
+      localStorage.setItem(
+        USERS_KEY,
+        JSON.stringify([{ user: "admin", pass: "admin123", role: "admin" }])
+      );
+    }
+
+    const loginOverlay = document.getElementById("login-overlay");
+    const dashboardWrapper = document.querySelector(".dashboard-wrapper");
+    const btnLogin = document.getElementById("btn-login");
+    const userInput = document.getElementById("login-username");
+    const passInput = document.getElementById("login-password");
+    const errorMsg = document.getElementById("login-error");
+    const btnOpenUsers = document.getElementById("btn-users");
+    const btnSyncUsers = document.getElementById("btn-sync-users");
+    const quickListEl = document.getElementById("login-quick-list");
+    const loggedUserLabel = document.getElementById("logged-user-name");
+    const btnTogglePass = document.getElementById("btn-toggle-password");
+
+    // Podgląd hasła
+    if (btnTogglePass && passInput) {
+      btnTogglePass.addEventListener("click", () => {
+        const isPass = passInput.type === "password";
+        passInput.type = isPass ? "text" : "password";
+        const icon = btnTogglePass.querySelector("i");
+        if (icon) icon.className = isPass ? "fas fa-eye-slash" : "fas fa-eye";
+      });
+    }
+
+    function applyUserPermissions(userVal) {
+      const username = typeof userVal === "object" ? userVal.username : userVal;
+      const role = typeof userVal === "object" ? userVal.role : (username === "admin" ? "admin" : "worker");
+
+      if (loggedUserLabel) loggedUserLabel.textContent = (username || "ADMIN").toUpperCase();
+      const addForm = document.querySelector(".users-add-form");
+      if (addForm) addForm.style.display = role === "admin" ? "flex" : "none";
+      if (btnSyncUsers) {
+        const syncWrap = btnSyncUsers.closest(".btn-bg");
+        if (syncWrap) syncWrap.style.display = role === "admin" ? "inline-flex" : "none";
+      }
+    }
+
+    function unlockUi(userData) {
+      if (loginOverlay) loginOverlay.classList.add("hidden");
+      if (dashboardWrapper) dashboardWrapper.classList.remove("locked");
+      if (errorMsg) errorMsg.style.display = "none";
+      if (userInput) userInput.value = "";
+      if (passInput) passInput.value = "";
+      applyUserPermissions(userData);
+      syncDashboardCharts();
+    }
+
+    // Weryfikacja aktywnej sesji
+    const savedSession = localStorage.getItem(SESSION_KEY);
+    if (savedSession) {
+      try {
+        const sessionObj = JSON.parse(savedSession);
+        unlockUi(sessionObj);
+      } catch (e) {
+        unlockUi({ username: savedSession, role: savedSession === "admin" ? "admin" : "worker" });
+      }
+    } else {
+      if (dashboardWrapper) dashboardWrapper.classList.add("locked");
+      if (loginOverlay) loginOverlay.classList.remove("hidden");
+      renderQuickLoginList();
+    }
+
+    // Szybki wybór profilu na ekranie logowania
+    async function renderQuickLoginList() {
+      if (!quickListEl) return;
+      quickListEl.innerHTML = '<span style="font-size:11px; color:var(--text-muted);"><i class="fas fa-spinner fa-spin"></i> Wczytywanie profili...</span>';
+
+      let users = [];
+      const apiRes = await apiRequest("/api/users");
+      if (apiRes.ok && apiRes.data && Array.isArray(apiRes.data.users)) {
+        users = apiRes.data.users;
+        serverUsersCache = users;
+        localStorage.setItem(USERS_KEY, JSON.stringify(users));
+      } else {
+        users = JSON.parse(localStorage.getItem(USERS_KEY) || "[]");
+        if (users.length === 0) users = [{ user: "admin", role: "admin" }];
+      }
+
+      quickListEl.innerHTML = "";
+
+      // Zawsze admin na początku, potem pozostali
+      const sortedUsers = [...users].sort((a, b) => {
+        if (a.user === "admin") return -1;
+        if (b.user === "admin") return 1;
+        return a.user.localeCompare(b.user);
+      });
+
+      // Wyświetlamy do 10 profili dla przejrzystości
+      sortedUsers.slice(0, 12).forEach((u) => {
+        const isAdmin = u.user === "admin";
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = `quick-user-btn ${isAdmin ? "admin" : ""}`;
+        btn.innerHTML = `<i class="fas ${isAdmin ? "fa-shield-halved" : "fa-user"}"></i><span>${u.user}</span>`;
+        btn.title = isAdmin ? "Administrator systemu" : (u.workerId != null ? `Pracownik [ID: ${u.workerId}]` : "Konto użytkownika");
+
+        btn.addEventListener("click", () => {
+          audio.playClick("normal");
+          if (userInput) {
+            userInput.value = u.user;
+            if (passInput) {
+              passInput.value = "";
+              passInput.focus();
+            }
+          }
+          document.querySelectorAll(".quick-user-btn").forEach((b) => b.classList.remove("selected"));
+          btn.classList.add("selected");
+          oxyAlert(`Wybrano profil: <strong>${u.user}</strong>. Wprowadź hasło.`, "info", "PROFIL");
+        });
+
+        quickListEl.appendChild(btn);
+      });
+    }
+
+    // Bezpieczne logowanie przez serwer (Bcrypt) z fallbackiem offline
+    async function performLogin(username, password) {
+      const userVal = String(username || "").trim();
+      const passVal = String(password || "").trim();
+
+      if (!userVal && !passVal) {
+        oxyAlert("Wprowadź login i hasło.", "warning", "BRAK DANYCH");
+        if (userInput) userInput.focus();
+        return false;
+      }
+
+      const loginBtn = document.getElementById("btn-login");
+      if (loginBtn) loginBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> WERYFIKACJA...';
+
+      try {
+        // 1. Próba logowania przez backend Express
+        const apiRes = await apiRequest("/api/login", "POST", { login: userVal, password: passVal });
+
+        if (apiRes.ok && apiRes.data && apiRes.data.success) {
+          serverOnline = true;
+          const userObj = apiRes.data.user;
+          localStorage.setItem(SESSION_KEY, JSON.stringify(userObj));
+          unlockUi(userObj);
+          audio.playClick("switch");
+          oxyAlert(`Zalogowano jako: <strong>${userObj.username}</strong> (${userObj.role.toUpperCase()})`, "success", "AUTORYZACJA OXY_OS");
+          return true;
+        } else if (apiRes.status === 401 || apiRes.status === 429) {
+          // Błędne hasło lub zablokowany IP z serwera
+          const errText = apiRes.data?.message || "Odmowa dostępu: nieprawidłowe hasło lub login.";
+          if (errorMsg) {
+            errorMsg.textContent = errText;
+            errorMsg.style.display = "block";
+          }
+          if (passInput) {
+            passInput.value = "";
+            passInput.focus();
+          }
+          audio.playClick("heavy");
+          oxyAlert(errText, "error", "ODMOWA DOSTĘPU");
+          return false;
+        }
+
+        // 2. Fallback offline (gdy serwer Express jest niedostępny)
+        const localUsers = JSON.parse(localStorage.getItem(USERS_KEY) || "[]");
+        const found = localUsers.find(
+          (u) => (u.user || "").toLowerCase() === userVal.toLowerCase() && (u.pass || "").trim() === passVal
+        ) || (userVal.toLowerCase() === "admin" && passVal === "admin123" ? { user: "admin", role: "admin" } : null);
+
+        if (found) {
+          const userObj = { username: found.user, role: found.role || "worker", workerId: found.workerId || null };
+          localStorage.setItem(SESSION_KEY, JSON.stringify(userObj));
+          unlockUi(userObj);
+          audio.playClick("switch");
+          oxyAlert(`Zalogowano w trybie offline jako: <strong>${userObj.username}</strong>`, "warning", "TRYB OFFLINE");
+          return true;
+        } else {
+          if (errorMsg) {
+            errorMsg.textContent = "Odmowa dostępu. Nieprawidłowy login lub hasło.";
+            errorMsg.style.display = "block";
+          }
+          if (passInput) {
+            passInput.value = "";
+            passInput.focus();
+          }
+          audio.playClick("heavy");
+          oxyAlert("Nieprawidłowe dane logowania.", "error", "BŁĄD LOGOWANIA");
+          return false;
+        }
+      } finally {
+        if (loginBtn) loginBtn.innerHTML = "ZALOGUJ";
+      }
+    }
+
+    function attemptLogin() {
+      performLogin(userInput ? userInput.value : "", passInput ? passInput.value : "");
+    }
+
+    if (btnLogin) btnLogin.addEventListener("click", attemptLogin);
+    if (passInput) passInput.addEventListener("keypress", (e) => { if (e.key === "Enter") attemptLogin(); });
+    if (userInput) userInput.addEventListener("keypress", (e) => { if (e.key === "Enter" && passInput) passInput.focus(); });
+
+    // Wylogowanie
+    const btnLogout = document.getElementById("btn-logout");
+    if (btnLogout) {
+      btnLogout.addEventListener("click", () => {
+        oxyConfirm("Czy na pewno chcesz zakończyć sesję OXY_OS?", () => {
+          localStorage.removeItem(SESSION_KEY);
+          window.location.reload();
+        });
+      });
+    }
+
+    // Modal zarządzania użytkownikami
+    const modalUsers = document.getElementById("users-modal-overlay");
+    const btnCloseUsers = document.getElementById("users-modal-close");
+    const listEl = document.getElementById("users-list");
+    const btnAdd = document.getElementById("btn-add-user");
+
+    async function syncUsersFromSchedule(silent = false) {
+      if (btnSyncUsers) {
+        btnSyncUsers.innerHTML = '<i class="fas fa-spinner fa-spin"></i> SYNCHRONIZACJA...';
       }
 
       try {
-        const res = await fetch(GITHUB_URL, { cache: "no-store" });
-        if (!res.ok) throw new Error("Błąd pobierania z GitHub");
-        const data = await res.json();
-
-        if (!Array.isArray(data))
-          throw new Error("Oczekiwano tablicy miesięcy z GitHub");
-
-        appState.allMonths = data;
-        appState.content = JSON.stringify(data, null, 2);
-        localStorage.setItem(STORAGE_KEY, appState.content);
-
-        const editorEl = document.getElementById("json-editor");
-        if (editorEl) {
-          editorEl.value = appState.content;
+        // Próba synchronizacji przez serwer backendowy
+        const apiRes = await apiRequest("/api/sync-github", "POST");
+        if (apiRes.ok && apiRes.data && apiRes.data.success) {
+          const added = apiRes.data.addedCount || 0;
+          await renderUsers();
+          renderQuickLoginList();
+          checkServerStatus();
+          if (!silent) oxyAlert(`Zsynchronizowano konta z GitHub (dodano ${added} nowych kont z haszowaniem Bcrypt).`, "success", "SYNCHRONIZACJA SERWERA");
+          return;
         }
 
-        appState.activeMonthIdx = findCurrentMonthIndex();
-        renderSchedule();
-        syncUsersFromSchedule(true);
+        // Fallback: synchronizacja lokalna
+        const users = JSON.parse(localStorage.getItem(USERS_KEY) || "[]");
+        let addedCount = 0;
 
-        if (iconDest && typeof AppIcons !== "undefined") {
-          iconDest.innerHTML = AppIcons.circleCheck || "";
-          setTimeout(() => {
-            iconDest.innerHTML = AppIcons.cloudDownload || "";
-          }, 2000);
-        }
-
-        oxyAlert("Pobrano najnowsze dane z chmury.", "success", "SYNCHRONIZACJA");
-      } catch (e) {
-        oxyAlert(
-          "Błąd chmury: " + (e && e.message ? e.message : e),
-          "error",
-          "BŁĄD POBIERANIA"
-        );
-
-        if (iconDest && typeof AppIcons !== "undefined") {
-          iconDest.innerHTML = AppIcons.cloudDownload || "";
-        }
-      }
-    });
-  }
-
-  document.getElementById("theme-toggle")?.addEventListener("click", () => {
-    document.documentElement.classList.add("theme-switching");
-
-    const isDark = document.documentElement.getAttribute("theme") === "dark";
-    document.documentElement.setAttribute("theme", isDark ? "light" : "dark");
-
-    const iconDest = document.getElementById("icon-sun-dest");
-    if (iconDest && typeof AppIcons !== "undefined") {
-      iconDest.innerHTML = isDark
-        ? AppIcons.sparkle2 || ""
-        : AppIcons.brightnessIncrease || "";
-    }
-
-    if (typeof Chart !== "undefined") {
-      Chart.defaults.color =
-        getComputedStyle(document.documentElement)
-          .getPropertyValue("--text-color")
-          .trim() || "#e0e0e0";
-      Object.values(charts).forEach((ch) => ch.update());
-      renderSchedule();
-    }
-
-    setTimeout(() => {
-      document.documentElement.classList.remove("theme-switching");
-    }, 50);
-  });
-
-  // ==========================================
-  // PWA SERVICE WORKER, OFFLINE & INSTALACJA
-  // ==========================================
-  function initPWA() {
-    if ("serviceWorker" in navigator) {
-      window.addEventListener("load", () => {
-        navigator.serviceWorker
-          .register("./sw.js")
-          .then((reg) => {
-            console.log("[PWA] Service Worker zarejestrowany. Zakres:", reg.scope);
-          })
-          .catch((err) => {
-            console.error("[PWA] Błąd rejestracji Service Workera:", err);
+        appState.allMonths.forEach((m) => {
+          if (!m.workers || !Array.isArray(m.workers)) return;
+          m.workers.forEach((w) => {
+            if (!w.name || w.name.trim() === "" || w.name === "Przykładowy Pracownik") return;
+            const username = w.name.trim().replace(/\s+/g, "_");
+            if (!users.some((u) => (u.user || "").toLowerCase() === username.toLowerCase())) {
+              const firstName = w.name.trim().split(" ")[0];
+              const pass = `${firstName}${w.id != null ? w.id : "123"}`;
+              users.push({ user: username, pass: pass, workerId: w.id || null, role: "worker" });
+              addedCount++;
+            }
           });
-      });
-    }
+        });
 
-    window.addEventListener("online", () => {
-      oxyAlert("Przywrócono połączenie sieciowe.", "info", "TRYB ONLINE");
-    });
-
-    window.addEventListener("offline", () => {
-      oxyAlert(
-        "Praca w trybie lokalnym. Zmiany są zapisywane w pamięci urządzenia.",
-        "warning",
-        "TRYB OFFLINE"
-      );
-    });
-
-    let deferredPrompt = null;
-    const pwaInstallBtn = document.getElementById("btn-pwa-install");
-
-    if (pwaInstallBtn) {
-      pwaInstallBtn.style.display = "none";
-    }
-
-    window.addEventListener("beforeinstallprompt", (e) => {
-      e.preventDefault();
-      deferredPrompt = e;
-      if (pwaInstallBtn) {
-        pwaInstallBtn.style.display = "flex";
-      }
-    });
-
-    if (pwaInstallBtn) {
-      pwaInstallBtn.addEventListener("click", async () => {
-        if (!deferredPrompt) return;
-        deferredPrompt.prompt();
-        const { outcome } = await deferredPrompt.userChoice;
-        if (outcome === "accepted") {
-          oxyAlert("Instalacja OXY_OS rozpoczęta.", "success", "INSTALACJA");
+        if (addedCount > 0) {
+          localStorage.setItem(USERS_KEY, JSON.stringify(users));
+          await renderUsers();
+          renderQuickLoginList();
+          if (!silent) oxyAlert(`Lokalnie dodano ${addedCount} kont z grafiku.`, "success", "SYNCHRONIZACJA LOKALNA");
+        } else if (!silent) {
+          oxyAlert("Wszyscy pracownicy posiadają już konta.", "info", "SYNCHRONIZACJA");
         }
-        deferredPrompt = null;
-        pwaInstallBtn.style.display = "none";
+      } catch (err) {
+        if (!silent) oxyAlert("Błąd synchronizacji: " + err.message, "error", "BŁĄD");
+      } finally {
+        if (btnSyncUsers) {
+          btnSyncUsers.innerHTML = '<i class="fas fa-rotate"></i> SYNCHRONIZUJ';
+        }
+      }
+    }
+
+    async function renderUsers() {
+      if (!listEl) return;
+      listEl.innerHTML = '<div style="padding:15px; text-align:center; color:var(--text-muted);"><i class="fas fa-spinner fa-spin"></i> Pobieranie bazy kont...</div>';
+
+      let users = [];
+      const apiRes = await apiRequest("/api/users");
+      if (apiRes.ok && apiRes.data && Array.isArray(apiRes.data.users)) {
+        users = apiRes.data.users;
+        serverUsersCache = users;
+        localStorage.setItem(USERS_KEY, JSON.stringify(users));
+      } else {
+        users = JSON.parse(localStorage.getItem(USERS_KEY) || "[]");
+      }
+
+      let currentSessionUser = "";
+      let currentSessionRole = "worker";
+      try {
+        const sess = JSON.parse(localStorage.getItem(SESSION_KEY) || "{}");
+        currentSessionUser = sess.username || "";
+        currentSessionRole = sess.role || "worker";
+      } catch (e) {
+        currentSessionUser = localStorage.getItem(SESSION_KEY) || "";
+        currentSessionRole = currentSessionUser === "admin" ? "admin" : "worker";
+      }
+
+      const isCurrentAdmin = currentSessionRole === "admin";
+      listEl.innerHTML = "";
+
+      users.forEach((u, idx) => {
+        const isAdmin = u.user === "admin";
+        const isSelf = u.user.toLowerCase() === currentSessionUser.toLowerCase();
+        const row = document.createElement("div");
+        row.className = "user-item-chassis";
+
+        const roleBadge = isAdmin
+          ? `<span class="user-role-badge admin-badge"><i class="fas fa-shield-halved"></i> GŁÓWNY ADMIN</span>`
+          : (u.role === "worker"
+            ? `<span class="user-role-badge worker-badge"><i class="fas fa-id-badge"></i> PRACOWNIK ${u.workerId != null ? `[ID: ${u.workerId}]` : ""}</span>`
+            : `<span class="user-role-badge custom-badge"><i class="fas fa-user"></i> UŻYTKOWNIK</span>`);
+
+        row.innerHTML = `
+          <div class="user-item-main">
+            <div class="user-item-identity">
+              <i class="fas ${isAdmin ? "fa-shield-halved text-highlight" : "fa-user text-muted"}"></i>
+              <div class="user-item-details">
+                <span class="user-item-name">${u.user} ${isSelf ? '<small style="color:var(--highlight-color); font-weight:normal;">(TY)</small>' : ""}</span>
+                <span class="user-item-role">${roleBadge}</span>
+              </div>
+            </div>
+
+            <div class="user-item-status-tag" style="font-size:11px; color:var(--text-muted); font-family:var(--font-tech);">
+              <i class="fas fa-lock" style="font-size:9px; margin-right:3px;"></i> Bcrypt Hash
+            </div>
+          </div>
+
+          <div class="user-item-actions">
+            ${(isCurrentAdmin || isSelf)
+            ? `<div class="btn-bg">
+                     <button type="button" class="btn btn-change-pass" data-username="${u.user}" title="Zmień hasło dla konta ${u.user}">
+                       <i class="fas fa-key"></i> <span class="btn-text">HASŁO</span>
+                     </button>
+                   </div>`
+            : ""
+          }
+
+            <div class="btn-bg">
+              <button type="button" class="btn btn-login-as ${isSelf ? "active" : ""}" data-username="${u.user}" title="Zaloguj jako ${u.user}">
+                <i class="fas fa-right-to-bracket"></i>
+                <span class="btn-text">${isSelf ? "AKTYWNY" : "WYBIERZ"}</span>
+              </button>
+            </div>
+
+            ${isAdmin || !isCurrentAdmin
+            ? (isAdmin ? `<div class="admin-locked-badge" title="Konto chronione"><i class="fas fa-lock"></i></div>` : "")
+            : `<div class="btn-bg">
+                     <button type="button" class="btn btn-icon delete-user-btn" data-username="${u.user}" data-idx="${idx}" title="Usuń konto">
+                       <i class="fas fa-trash"></i>
+                     </button>
+                   </div>`
+          }
+          </div>
+        `;
+        listEl.appendChild(row);
       });
     }
 
-    window.addEventListener("appinstalled", () => {
-      oxyAlert("Aplikacja OXY_OS została zainstalowana.", "success", "GOTOWE");
-      if (pwaInstallBtn) pwaInstallBtn.style.display = "none";
-    });
+    if (btnSyncUsers) {
+      btnSyncUsers.addEventListener("click", () => syncUsersFromSchedule(false));
+    }
+
+    // Obsługa akcji na liście kont
+    if (listEl) {
+      listEl.addEventListener("click", async (e) => {
+        // 1. Zmiana hasła
+        const passBtn = e.target.closest(".btn-change-pass");
+        if (passBtn) {
+          const targetUser = passBtn.dataset.username;
+          openChangePasswordDialog(targetUser);
+          return;
+        }
+
+        // 2. Przełączenie użytkownika
+        const loginBtn = e.target.closest(".btn-login-as");
+        if (loginBtn) {
+          const targetUser = loginBtn.dataset.username;
+          if (modalUsers) modalUsers.classList.remove("active");
+          if (loginOverlay) loginOverlay.classList.remove("hidden");
+          if (dashboardWrapper) dashboardWrapper.classList.add("locked");
+          if (userInput) {
+            userInput.value = targetUser;
+            if (passInput) {
+              passInput.value = "";
+              passInput.focus();
+            }
+          }
+          oxyAlert(`Wybrano konto <strong>${targetUser}</strong>. Wprowadź hasło.`, "info", "LOGOWANIE");
+          return;
+        }
+
+        // 3. Usunięcie użytkownika
+        const deleteBtn = e.target.closest(".delete-user-btn");
+        if (deleteBtn) {
+          const targetUser = deleteBtn.dataset.username;
+          if (targetUser === "admin") {
+            oxyAlert("Nie można usunąć głównego konta administratora.", "error", "ODMOWA");
+            return;
+          }
+
+          oxyConfirm(`Czy na pewno trwale usunąć profil "${targetUser}"?`, async () => {
+            const apiRes = await apiRequest(`/api/users/${encodeURIComponent(targetUser)}`, "DELETE");
+            if (apiRes.ok) {
+              oxyAlert(`Konto "${targetUser}" zostało usunięte z bazy serwera.`, "info", "USUNIĘTO");
+            } else {
+              // Fallback lokalny
+              const users = JSON.parse(localStorage.getItem(USERS_KEY) || "[]");
+              const filtered = users.filter((u) => u.user.toLowerCase() !== targetUser.toLowerCase());
+              localStorage.setItem(USERS_KEY, JSON.stringify(filtered));
+              oxyAlert(`Konto "${targetUser}" zostało usunięte lokalnie.`, "info", "USUNIĘTO");
+            }
+            await renderUsers();
+            renderQuickLoginList();
+          });
+        }
+      });
+    }
+
+    // Dialog zmiany hasła
+    function openChangePasswordDialog(targetUser) {
+      let overlay = document.getElementById("change-pass-overlay");
+      if (!overlay) {
+        overlay = document.createElement("div");
+        overlay.id = "change-pass-overlay";
+        overlay.className = "shift-modal-overlay";
+        overlay.innerHTML = `
+          <div class="shift-modal-content" style="max-width: 380px;">
+            <div class="shift-modal-header">
+              <h3 class="shift-modal-title"><i class="fas fa-key" style="color:var(--highlight-color); margin-right:8px;"></i> Zmiana Hasła</h3>
+              <div class="chassis-socket"><button id="btn-close-change-pass" class="shift-modal-close">&times;</button></div>
+            </div>
+            <div class="shift-modal-body" style="flex-direction: column; gap: 12px; padding: 1.25rem;">
+              <p style="font-size: 13px; color: var(--text-color);">Zmień hasło dla konta: <strong id="change-pass-user-label" style="color:var(--highlight-color);"></strong></p>
+              <div class="input-chassis" style="width: 100%;">
+                <input type="password" id="input-new-pass" class="shift-input tactile-input" placeholder="Wprowadź nowe hasło..." style="width: 100%; height: 36px; padding: 0 10px;">
+              </div>
+              <div class="input-chassis" style="width: 100%;">
+                <input type="password" id="input-new-pass-confirm" class="shift-input tactile-input" placeholder="Powtórz nowe hasło..." style="width: 100%; height: 36px; padding: 0 10px;">
+              </div>
+              <div style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 8px;">
+                <div class="btn-bg"><button type="button" id="btn-cancel-pass" class="btn">ANULUJ</button></div>
+                <div class="btn-bg"><button type="button" id="btn-submit-pass" class="btn active">ZAPISZ HASŁO</button></div>
+              </div>
+            </div>
+          </div>
+        `;
+        document.body.appendChild(overlay);
+
+        document.getElementById("btn-close-change-pass").addEventListener("click", () => overlay.classList.remove("active"));
+        document.getElementById("btn-cancel-pass").addEventListener("click", () => overlay.classList.remove("active"));
+      }
+
+      document.getElementById("change-pass-user-label").textContent = targetUser;
+      const passInp = document.getElementById("input-new-pass");
+      const passConf = document.getElementById("input-new-pass-confirm");
+      passInp.value = "";
+      passConf.value = "";
+      overlay.classList.add("active");
+      passInp.focus();
+
+      const btnSubmit = document.getElementById("btn-submit-pass");
+      btnSubmit.onclick = async () => {
+        const p1 = passInp.value.trim();
+        const p2 = passConf.value.trim();
+        if (!p1 || p1.length < 3) {
+          oxyAlert("Hasło musi mieć co najmniej 3 znaki.", "warning", "HASŁO");
+          return;
+        }
+        if (p1 !== p2) {
+          oxyAlert("Podane hasła nie są identyczne.", "error", "BŁĄD HASEŁ");
+          return;
+        }
+
+        // Zapis przez serwer
+        const apiRes = await apiRequest(`/api/users/${encodeURIComponent(targetUser)}/password`, "PUT", { newPassword: p1 });
+        if (apiRes.ok) {
+          oxyAlert(`Zaktualizowano hasło dla "${targetUser}" w bazie serwera (Bcrypt).`, "success", "SUKCES");
+        } else {
+          // Zapis lokalny fallback
+          const users = JSON.parse(localStorage.getItem(USERS_KEY) || "[]");
+          const target = users.find((u) => u.user.toLowerCase() === targetUser.toLowerCase());
+          if (target) {
+            target.pass = p1;
+            localStorage.setItem(USERS_KEY, JSON.stringify(users));
+          }
+          oxyAlert(`Zaktualizowano hasło lokalnie dla "${targetUser}".`, "info", "SUKCES");
+        }
+        overlay.classList.remove("active");
+        audio.playClick("switch");
+      };
+    }
+
+    // Dodawanie nowego użytkownika
+    if (btnAdd) {
+      btnAdd.addEventListener("click", async () => {
+        const uInp = document.getElementById("new-username");
+        const pInp = document.getElementById("new-password");
+        const uVal = uInp ? uInp.value.trim().replace(/\s+/g, "_") : "";
+        const pVal = pInp ? pInp.value.trim() : "";
+
+        if (!uVal || !pVal) {
+          oxyAlert("Podaj login i hasło dla nowego użytkownika.", "warning", "BRAK DANYCH");
+          return;
+        }
+
+        // 1. Zapis przez serwer Express
+        const apiRes = await apiRequest("/api/users", "POST", { user: uVal, pass: pVal, role: "custom" });
+        if (apiRes.ok && apiRes.data && apiRes.data.success) {
+          oxyAlert(`Utworzono konto "${uVal}" na serwerze z haszowaniem Bcrypt.`, "success", "NOWY UŻYTKOWNIK");
+        } else if (apiRes.status === 400) {
+          oxyAlert(apiRes.data?.message || "Użytkownik już istnieje.", "error", "DUPLIKAT");
+          return;
+        } else {
+          // Fallback lokalny
+          const users = JSON.parse(localStorage.getItem(USERS_KEY) || "[]");
+          if (users.find((u) => u.user.toLowerCase() === uVal.toLowerCase())) {
+            oxyAlert("Użytkownik już istnieje w bazie lokalnej.", "error", "DUPLIKAT");
+            return;
+          }
+          users.push({ user: uVal, pass: pVal, role: "custom" });
+          localStorage.setItem(USERS_KEY, JSON.stringify(users));
+          oxyAlert(`Utworzono konto "${uVal}" w trybie lokalnym.`, "success", "NOWY UŻYTKOWNIK");
+        }
+
+        if (uInp) uInp.value = "";
+        if (pInp) pInp.value = "";
+        await renderUsers();
+        renderQuickLoginList();
+      });
+    }
+
+    if (btnOpenUsers) {
+      btnOpenUsers.addEventListener("click", async () => {
+        await checkServerStatus();
+        await renderUsers();
+        modalUsers.classList.add("active");
+      });
+    }
+
+    if (btnCloseUsers) btnCloseUsers.addEventListener("click", () => modalUsers.classList.remove("active"));
+    if (modalUsers) {
+      modalUsers.addEventListener("click", (e) => {
+        if (e.target === modalUsers) modalUsers.classList.remove("active");
+      });
+    }
+
+    window.syncUsersFromSchedule = syncUsersFromSchedule;
   }
 
   // ==========================================
-  // GŁÓWNY PUNKT STARTOWY APLIKACJI (BOOT)
+  // INICJALIZACJA STARTOWA
   // ==========================================
   function bootApplication() {
-    initUserManagementModal();
-    initPWA();
+    // 1. Motyw wizualny (zapamiętany w localStorage)
+    const savedTheme = localStorage.getItem("oxy_os_theme") || "dark";
+    document.documentElement.setAttribute("theme", savedTheme);
 
-    document.documentElement.setAttribute("theme", "dark");
+    // 2. Sprawdzenie statusu serwera Express i start systemu logowania
+    checkServerStatus();
+    setInterval(checkServerStatus, 30000);
+    initLoginSystem();
 
+    // 3. Wstrzyknięcie ikon SVG
     if (typeof AppIcons !== "undefined") {
       const injectIcon = (id, iconSvg) => {
         const dest = document.getElementById(id);
         if (dest && iconSvg) dest.innerHTML = iconSvg;
       };
-
       injectIcon("icon-calendar-dest", AppIcons.calendarGlass);
       injectIcon("icon-cube-dest", AppIcons.cubeGlass);
       injectIcon("icon-cloud-download-dest", AppIcons.cloudDownload);
-      injectIcon("icon-sun-dest", AppIcons.brightnessIncrease);
+      injectIcon("icon-sun-dest", savedTheme === "light" ? AppIcons.sparkle2 : AppIcons.brightnessIncrease);
       injectIcon("icon-file-download-dest", AppIcons.filedownload);
     }
 
     createShiftListModal();
     createWorkerCalendarModal();
+    initServerConfigModal();
     loadData();
     initTabsAndEditor();
     initCharts();
     startClock();
     renderSchedule();
 
-    syncUsersFromSchedule(true);
-    renderLoginScreen();
+    // Przycisk "Kto na zmianie" w górnym pasku / dolnym mobilnym menu
+    const btnKto = document.getElementById("btn-kto-na-zmianie");
+    if (btnKto) {
+      btnKto.addEventListener("click", () => {
+        openShiftListModal();
+      });
+    }
+
+    // Kliknięcie w kartę "Dniówka (Dziś)" otwiera obsadę dzienną
+    const wDay = document.getElementById("widget-day-count")?.closest(".widget-card");
+    if (wDay) {
+      wDay.style.cursor = "pointer";
+      wDay.title = "Kliknij, aby otworzyć listę pracowników na dniówce";
+      wDay.addEventListener("click", () => openShiftListModal(null, "day"));
+    }
+
+    // Kliknięcie w kartę "Nocka (Dziś)" otwiera obsadę nocną
+    const wNight = document.getElementById("widget-night-count")?.closest(".widget-card");
+    if (wNight) {
+      wNight.style.cursor = "pointer";
+      wNight.title = "Kliknij, aby otworzyć listę pracowników na nocce";
+      wNight.addEventListener("click", () => openShiftListModal(null, "night"));
+    }
+
+    // 4. Pobieranie danych z GitHub
+    const btnCloud = document.getElementById("btn-cloud-fetch");
+    if (btnCloud) {
+      btnCloud.addEventListener("click", async () => {
+        const iconDest = document.getElementById("icon-cloud-download-dest");
+        if (iconDest) iconDest.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        try {
+          const res = await fetch(GITHUB_URL, { cache: "no-store" });
+          if (!res.ok) throw new Error("Błąd pobierania");
+          const data = await res.json();
+          appState.allMonths = data;
+          appState.content = JSON.stringify(data, null, 2);
+          localStorage.setItem(STORAGE_KEY, appState.content);
+
+          const editorEl = document.getElementById("json-editor");
+          if (editorEl) editorEl.value = appState.content;
+
+          appState.activeMonthIdx = findCurrentMonthIndex();
+          renderSchedule();
+
+          if (typeof window.syncUsersFromSchedule === "function") {
+            window.syncUsersFromSchedule(true);
+          }
+
+          oxyAlert("Pobrano najnowsze dane z chmury.", "success", "SYNCHRONIZACJA");
+        } catch (e) {
+          oxyAlert("Błąd chmury: " + e.message, "error", "BŁĄD");
+        } finally {
+          if (iconDest && typeof AppIcons !== "undefined") {
+            iconDest.innerHTML = AppIcons.cloudDownload || "";
+          }
+        }
+      });
+    }
+
+    // 5. Przełączanie motywu (Ciemny / Jasny)
+    const themeBtn = document.getElementById("theme-toggle");
+    if (themeBtn) {
+      themeBtn.addEventListener("click", () => {
+        document.documentElement.classList.add("theme-switching");
+        const current = document.documentElement.getAttribute("theme") || "dark";
+        const newTheme = current === "dark" ? "light" : "dark";
+
+        document.documentElement.setAttribute("theme", newTheme);
+        localStorage.setItem("oxy_os_theme", newTheme);
+
+        const iconDest = document.getElementById("icon-sun-dest");
+        if (iconDest && typeof AppIcons !== "undefined") {
+          iconDest.innerHTML = newTheme === "light" ? (AppIcons.sparkle2 || "") : (AppIcons.brightnessIncrease || "");
+        }
+
+        updateChartTheme();
+        renderSchedule();
+        setTimeout(() => document.documentElement.classList.remove("theme-switching"), 50);
+        audio.playClick("switch");
+      });
+    }
+
+    // 6. Instalacja PWA
+    let deferredInstallPrompt = null;
+    window.addEventListener("beforeinstallprompt", (e) => {
+      e.preventDefault();
+      deferredInstallPrompt = e;
+      const pwaBtn = document.getElementById("btn-pwa-install");
+      if (pwaBtn) pwaBtn.style.opacity = "1";
+    });
+
+    const pwaBtn = document.getElementById("btn-pwa-install");
+    if (pwaBtn) {
+      pwaBtn.addEventListener("click", async () => {
+        if (deferredInstallPrompt) {
+          deferredInstallPrompt.prompt();
+          const { outcome } = await deferredInstallPrompt.userChoice;
+          if (outcome === "accepted") {
+            oxyAlert("Aplikacja OXY_OS została pomyślnie zainstalowana.", "success", "PWA");
+          }
+          deferredInstallPrompt = null;
+        } else {
+          oxyAlert("Aplikacja OXY_OS jest gotowa w przeglądarce.", "info", "PWA");
+        }
+      });
+    }
   }
+
+  // Globalny dostęp do odtwarzacza dźwięków sprzętowych
+  window._oxyAudio = audio;
 
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", bootApplication);
@@ -2170,62 +2027,12 @@
   }
 })();
 
-// Globalny odsłuch kliknięć dla dźwięków taktylnych
+// Dźwięk tactile click dla wszystkich przycisków (optymalizacja bez tworzenia wielu AudioContext)
 document.addEventListener("click", (e) => {
-  const btn = e.target.closest("button, .btn, .icon-btn");
+  const btn = e.target.closest("button, .btn, .icon-btn, .month-tab-btn, .option");
   if (btn && !btn.classList.contains("select-trigger")) {
-    const audioInstance = window.audio || null;
-    if (audioInstance && audioInstance.playClick) {
-      audioInstance.playClick("normal");
+    if (window._oxyAudio && typeof window._oxyAudio.playClick === "function") {
+      window._oxyAudio.playClick("normal");
     }
   }
-});
-
-const performLogin = async () => {
-  const passVal = passInp ? passInp.value.trim() : "";
-  const userVal = userInp ? userInp.value.trim() : "";
-
-  btnSubmit.innerHTML = '<i class="fas fa-spinner fa-spin"></i> WERYFIKACJA...';
-  btnSubmit.disabled = true;
-
-  try {
-    const response = await fetch("/api/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        login: mode === "credentials" ? userVal : (selectedWorkerName ? selectedWorkerName.replace(/\s+/g, "_") : ""),
-        password: passVal
-      })
-    });
-
-    const data = await response.json();
-
-    if (data.success) {
-      audio.playClick("heavy");
-      sessionStorage.setItem("oxy_os_user", data.user.username);
-      renderLoginScreen();
-      renderSchedule();
-      oxyAlert(`Zalogowano pomyślnie jako: <strong>${data.user.username}</strong>`, "success", "AUTORYZACJA");
-    } else {
-      throw new Error(data.message || "Błąd autoryzacji.");
-    }
-  } catch (err) {
-    audio.playClick("switch");
-    if (errBadge) {
-      errBadge.textContent = err.message || "Odmowa autoryzacji: nieprawidłowe hasło.";
-      errBadge.style.display = "block";
-    }
-    const box = overlay.querySelector(".login-box");
-    if (box) {
-      box.classList.add("login-shake");
-      setTimeout(() => box.classList.remove("login-shake"), 350);
-    }
-    if (passInp) {
-      passInp.value = "";
-      passInp.focus();
-    }
-  } finally {
-    btnSubmit.innerHTML = '<i class="fas fa-right-to-bracket"></i> ZALOGUJ';
-    btnSubmit.disabled = false;
-  }
-};
+});
