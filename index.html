@@ -109,52 +109,52 @@
             </div>
         </div>
     </div>
-    
+
     <!-- MODAL KONFIGURACJI SERWERA / RENDER -->
     <div id="server-config-modal" class="shift-modal-overlay">
         <div class="shift-modal-content shift-modal-content-server">
-                    <div class="shift-modal-header">
-                        <h3 class="shift-modal-title">
-                            <i class="fas fa-server server-icon-highlight"></i>
-                            Połączenie z Serwerem / Render
-                        </h3>
-                        <div class="chassis-socket">
-                            <button id="server-config-close" class="shift-modal-close">&times;</button>
-                        </div>
+            <div class="shift-modal-header">
+                <h3 class="shift-modal-title">
+                    <i class="fas fa-server server-icon-highlight"></i>
+                    Połączenie z Serwerem / Render
+                </h3>
+                <div class="chassis-socket">
+                    <button id="server-config-close" class="shift-modal-close">&times;</button>
+                </div>
+            </div>
+            <div class="shift-modal-body server-modal-body">
+                <div class="server-status-container">
+                    Status połączenia: <strong id="server-modal-status-text" class="text-success-status">ONLINE</strong>
+                    <div class="server-details-text" id="server-modal-details">
+                        Połączono z serwerem API
                     </div>
-                    <div class="shift-modal-body server-modal-body">
-                        <div class="server-status-container">
-                            Status połączenia: <strong id="server-modal-status-text" class="text-success-status">ONLINE</strong>
-                            <div class="server-details-text" id="server-modal-details">
-                                Połączono z serwerem API
-                            </div>
-                        </div>
+                </div>
 
-                        <div class="server-input-group">
-                            <label class="server-input-label">
-                                Adres URL backendu (np. Render.com):
-                            </label>
-                            <div class="input-chassis input-chassis-full">
-                                <input type="text" id="input-api-url" class="shift-input tactile-input server-url-input"
-                                    placeholder="Domyślnie automatyczny (lub https://web-dev-fdni.onrender.com/)">
-                            </div>
-                            <div class="server-help-text">
-                                Pozostaw puste, aby automatycznie łączyć się z bieżącą domeną (np. wdrożoną bezpośrednio
-                                na Renderze lub localhost:3000).
-                            </div>
-                        </div>
+                <div class="server-input-group">
+                    <label class="server-input-label">
+                        Adres URL backendu (np. Render.com):
+                    </label>
+                    <div class="input-chassis input-chassis-full">
+                        <input type="text" id="input-api-url" class="shift-input tactile-input server-url-input"
+                            placeholder="Domyślnie automatyczny (lub https://web-dev-fdni.onrender.com/)">
+                    </div>
+                    <div class="server-help-text">
+                        Pozostaw puste, aby automatycznie łączyć się z bieżącą domeną (np. wdrożoną bezpośrednio
+                        na Renderze lub localhost:3000).
+                    </div>
+                </div>
 
-                        <div class="server-actions-row">
-                            <div class="btn-bg">
-                                <button type="button" id="btn-reset-api-url" class="btn">AUTOMATYCZNY</button>
-                            </div>
-                            <div class="btn-bg">
-                                <button type="button" id="btn-save-api-url" class="btn active">ZAPISZ I POŁĄCZ</button>
-                            </div>
-                        </div>
+                <div class="server-actions-row">
+                    <div class="btn-bg">
+                        <button type="button" id="btn-reset-api-url" class="btn">AUTOMATYCZNY</button>
+                    </div>
+                    <div class="btn-bg">
+                        <button type="button" id="btn-save-api-url" class="btn active">ZAPISZ I POŁĄCZ</button>
                     </div>
                 </div>
             </div>
+        </div>
+    </div>
     <!-- GŁÓWNY KONTENER APLIKACJI -->
     <div class="dashboard-wrapper locked">
         <div class="main-content">
@@ -177,7 +177,7 @@
                     </div>
                     <div class="btn-bg">
                         <button id="btn-kto-na-zmianie" class="btn" title="Kto na Zmianie (Obsada)">
-                            <i class="fas fa-users-viewfinder"></i> Kto na zmianie
+                            <i class="fas fa-users-viewfinder"></i> Zmiana
                         </button>
                     </div>
                     <div class="btn-bg">
