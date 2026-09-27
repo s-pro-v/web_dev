@@ -1223,11 +1223,24 @@
   }
 
   async function checkServerStatus() {
-    const res = await apiRequest("/api/status");
+    let endpoint = "/api/status";
+    try {
+      const sessionStr = localStorage.getItem("oxy_os_user");
+      if (sessionStr) {
+        const sessionObj = JSON.parse(sessionStr);
+        if (sessionObj.username) {
+          endpoint += `?user=${encodeURIComponent(sessionObj.username)}`;
+        }
+      }
+    } catch (e) {}
+
+    const res = await apiRequest(endpoint);
     const badge = document.getElementById("server-status-badge");
     const textEl = document.getElementById("server-status-text");
     const modalStatus = document.getElementById("server-modal-status-text");
     const modalDetails = document.getElementById("server-modal-details");
+    const loginStatus = document.getElementById("login-server-status");
+    const loginStatusText = document.getElementById("login-server-text");
 
     const currentBase = getApiBase() || window.location.origin;
 
@@ -1246,6 +1259,11 @@
       if (modalDetails) {
         modalDetails.textContent = `Połączono z: ${currentBase} (v${res.data.version}, użytkownicy: ${res.data.usersCount})`;
       }
+      if (loginStatus && loginStatusText) {
+        loginStatus.classList.remove("offline");
+        loginStatus.classList.add("online");
+        loginStatusText.textContent = "SERWER ONLINE";
+      }
       return true;
     } else {
       serverOnline = false;
@@ -1261,6 +1279,11 @@
       }
       if (modalDetails) {
         modalDetails.textContent = `Nie można nawiązać połączenia z: ${currentBase}. Kliknij ZAPISZ I POŁĄCZ po wpisaniu adresu Render.`;
+      }
+      if (loginStatus && loginStatusText) {
+        loginStatus.classList.remove("online");
+        loginStatus.classList.add("offline");
+        loginStatusText.textContent = "SERWER OFFLINE";
       }
       return false;
     }
@@ -1358,15 +1381,22 @@
     }
 
     function applyUserPermissions(userVal) {
-      const username = typeof userVal === "object" ? userVal.username : userVal;
-      const role = typeof userVal === "object" ? userVal.role : (username === "admin" ? "admin" : "worker");
+      const username = typeof userVal === "object" ? (userVal.username || "") : (userVal || "");
+      const lowerUser = username.toLowerCase();
+      const isAdmin = (lowerUser === "admin" || lowerUser === "robert_s");
 
       if (loggedUserLabel) loggedUserLabel.textContent = (username || "ADMIN").toUpperCase();
+      
       const addForm = document.querySelector(".users-add-form");
-      if (addForm) addForm.style.display = role === "admin" ? "flex" : "none";
+      if (addForm) addForm.style.display = isAdmin ? "flex" : "none";
+      
       if (btnSyncUsers) {
         const syncWrap = btnSyncUsers.closest(".btn-bg");
-        if (syncWrap) syncWrap.style.display = role === "admin" ? "inline-flex" : "none";
+        if (syncWrap) syncWrap.style.display = isAdmin ? "inline-flex" : "none";
+      }
+
+      if (btnOpenUsers) {
+        btnOpenUsers.style.display = isAdmin ? "flex" : "none";
       }
     }
 
@@ -1637,6 +1667,11 @@
             ? `<span class="user-role-badge worker-badge"><i class="fas fa-id-badge"></i> PRACOWNIK ${u.workerId != null ? `[ID: ${u.workerId}]` : ""}</span>`
             : `<span class="user-role-badge custom-badge"><i class="fas fa-user"></i> UŻYTKOWNIK</span>`);
 
+        const isOnline = u.lastSeen && (Date.now() - u.lastSeen < 5 * 60 * 1000); // online jeśli aktywny w ciągu ostatnich 5 minut
+        const onlineTag = isOnline 
+          ? `<span style="color:var(--success-color); font-weight:bold; margin-right:8px;"><i class="fas fa-circle" style="font-size:8px; vertical-align:middle;"></i> ONLINE</span>` 
+          : `<span style="color:var(--text-muted); margin-right:8px;"><i class="fas fa-circle" style="font-size:8px; vertical-align:middle;"></i> OFFLINE</span>`;
+
         row.innerHTML = `
           <div class="user-item-main">
             <div class="user-item-identity">
@@ -1648,6 +1683,7 @@
             </div>
 
             <div class="user-item-status-tag" style="font-size:11px; color:var(--text-muted); font-family:var(--font-tech);">
+              ${onlineTag}
               <i class="fas fa-lock" style="font-size:9px; margin-right:3px;"></i> Bcrypt Hash
             </div>
           </div>
@@ -1801,7 +1837,7 @@
         // Zapis przez serwer
         const apiRes = await apiRequest(`/api/users/${encodeURIComponent(targetUser)}/password`, "PUT", { newPassword: p1 });
         if (apiRes.ok) {
-          oxyAlert(`Zaktualizowano hasło dla "${targetUser}" w bazie serwera (Bcrypt).`, "success", "SUKCES");
+          oxyAlert(`Potwierdzenie: Nowe hasło dla ${targetUser} zostało zapisane na serwerze!`, "success", "SUKCES");
         } else {
           // Zapis lokalny fallback
           const users = JSON.parse(localStorage.getItem(USERS_KEY) || "[]");
@@ -1833,7 +1869,7 @@
         // 1. Zapis przez serwer Express
         const apiRes = await apiRequest("/api/users", "POST", { user: uVal, pass: pVal, role: "custom" });
         if (apiRes.ok && apiRes.data && apiRes.data.success) {
-          oxyAlert(`Utworzono konto "${uVal}" na serwerze z haszowaniem Bcrypt.`, "success", "NOWY UŻYTKOWNIK");
+          oxyAlert(`Potwierdzenie: Nowe hasło i konto (${uVal}) zostało dodane na serwerze!`, "success", "SUKCES");
         } else if (apiRes.status === 400) {
           oxyAlert(apiRes.data?.message || "Użytkownik już istnieje.", "error", "DUPLIKAT");
           return;

@@ -15,6 +15,9 @@ app.use(express.json());
 // Prosty rejestr prób logowania (ochrona przed atakami Brute-Force na IP)
 const loginAttempts = new Map();
 
+// Rejestr aktywnych sesji: username -> timestamp (ostatnia aktywność)
+const activeSessions = new Map();
+
 function isRateLimited(ip) {
     const now = Date.now();
     const entry = loginAttempts.get(ip);
@@ -151,11 +154,13 @@ app.post("/api/login", (req, res) => {
 // ========================================================
 app.get("/api/users", (req, res) => {
     const users = loadUsers();
+    
     // Zwracamy listę bez hashy kryptograficznych dla bezpieczeństwa
     const sanitized = users.map(u => ({
         user: u.user,
         role: u.role,
-        workerId: u.workerId
+        workerId: u.workerId,
+        lastSeen: activeSessions.get(u.user.toLowerCase()) || null
     }));
     res.json({ success: true, users: sanitized });
 });
@@ -196,7 +201,7 @@ app.delete("/api/users/:username", (req, res) => {
     const { username } = req.params;
     let users = loadUsers();
 
-    if (username === "admin") {
+    if (username.toLowerCase() === "admin" || username.toLowerCase() === "robert_s") {
         return res.status(403).json({ success: false, message: "Konta administratora nie można usunąć." });
     }
 
@@ -215,6 +220,11 @@ app.delete("/api/users/:username", (req, res) => {
 // ENDPOINT: Status serwera i bazy
 // ========================================================
 app.get("/api/status", (req, res) => {
+    const { user } = req.query;
+    if (user) {
+        activeSessions.set(user.toLowerCase(), Date.now());
+    }
+
     const users = loadUsers();
     res.json({
         success: true,
