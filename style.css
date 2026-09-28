@@ -160,6 +160,7 @@
     --shadow-button: var(--shadow-drop);
     --shadow-float: 0 4px 12px rgba(0, 0, 0, 0.08);
     --filter-icon: invert(0.15);
+    /*  */
     --metal-gradient: linear-gradient(165deg, var(--bg-primary) 0%, var(--panel-bg) 50%, var(--bg-tertiary) 100%);
     --stripe-accent: rgba(0, 0, 0, 0.08);
     --header-chrome-border: rgba(0, 0, 0, 0.15);
@@ -206,8 +207,8 @@ body {
     align-items: center;
     padding: 1rem;
     line-height: 1.5;
-    background-image: radial-gradient(var(--grid-line) 1px, transparent 1px);
-    background-size: 24px 24px;
+    background-image: radial-gradient(var(--hover-bg) 1px, transparent 1px);
+    background-size: 124px 124px;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     transition: background-color var(--transition-speed), color var(--transition-speed);
@@ -308,7 +309,7 @@ textarea {
     border: 1px solid var(--border-color);
     background: var(--bg-tertiary);
     color: var(--text-muted);
-    min-width: 120px;
+    min-width: 140px;
     height: 32px;
     padding: 0 0.85rem;
     transition: var(--transition-ui);
@@ -472,10 +473,10 @@ textarea {
 }
 
 .page-title {
-    font-size: 1.35rem;
+    font-size: 0.8rem;
     font-weight: 700;
     letter-spacing: 0.025em;
-    padding: 0 0.5rem;
+
 }
 
 .user-controls {
