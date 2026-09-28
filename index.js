@@ -59,7 +59,7 @@
           osc.stop(now + 0.015);
         }
       } catch (e) {
-        // Ignoruj w przypadku braku uprawnień audio
+        // Ignoruj błędy autoodtwarzania
       }
     }
   }
@@ -1446,7 +1446,7 @@
       renderQuickLoginList();
     }
 
-    // Pobieranie listy kont BEZPOŚREDNIO z serwera
+    // Pobieranie listy kont z serwera
     async function renderQuickLoginList() {
       if (!quickListEl) return;
 
@@ -1705,10 +1705,11 @@
         const apiRes = await apiRequest("/api/sync-github", "POST");
         if (apiRes.ok && apiRes.data && apiRes.data.success) {
           const added = apiRes.data.addedCount || 0;
+          const targetFile = apiRes.data.updatedFile || "users_db.json";
           await renderUsers();
           renderQuickLoginList();
           checkServerStatus();
-          if (!silent) oxyAlert(`Zsynchronizowano konta na serwerze (dodano ${added} nowych profili Bcrypt).`, "success", "SYNCHRONIZACJA SERWERA");
+          if (!silent) oxyAlert(`Zsynchronizowano konta na serwerze (dodano ${added} profili, zaktualizowano plik <code>${targetFile}</code>).`, "success", "SYNCHRONIZACJA SERWERA");
           return;
         }
         throw new Error(apiRes.data?.message || "Błąd komunikacji z serwerem");
@@ -1853,7 +1854,7 @@
           oxyConfirm(`Czy na pewno trwale usunąć profil "${targetUser}" z serwera?`, async () => {
             const apiRes = await apiRequest(`/api/users/${encodeURIComponent(targetUser)}`, "DELETE");
             if (apiRes.ok) {
-              oxyAlert(`Konto "${targetUser}" zostało usunięte z serwera.`, "info", "USUNIĘTO");
+              oxyAlert(`Konto "${targetUser}" zostało usunięte z bazy serwera.`, "info", "USUNIĘTO");
               await renderUsers();
               renderQuickLoginList();
             } else {
@@ -1864,7 +1865,7 @@
       });
     }
 
-    // ZMIANA HASŁA BEZPOŚREDNIO NA SERWERZE
+    // ZMIANA HASŁA BEZPOŚREDNIO NA SERWERZE Z POTWIERDZENIEM
     function openChangePasswordDialog(targetUser) {
       let overlay = document.getElementById("change-pass-overlay");
       if (!overlay) {
@@ -1887,7 +1888,7 @@
               </div>
               <div class="change-pass-actions">
                 <div class="btn-bg"><button type="button" id="btn-cancel-pass" class="btn">ANULUJ</button></div>
-                <div class="btn-bg"><button type="button" id="btn-submit-pass" class="btn active">ZAPISZ</button></div>
+                <div class="btn-bg"><button type="button" id="btn-submit-pass" class="btn active">ZAPISZ NA SERWERZE</button></div>
               </div>
             </div>
           </div>
@@ -1923,7 +1924,12 @@
         try {
           const apiRes = await apiRequest(`/api/users/${encodeURIComponent(targetUser)}/password`, "PUT", { newPassword: p1 });
           if (apiRes.ok && apiRes.data && apiRes.data.success) {
-            oxyAlert(`Nowe hasło dla ${targetUser} zostało zapisane w bazie serwera! Możesz się teraz zalogować.`, "success", "SUKCES SERWERA");
+            const fileName = apiRes.data.updatedFile || "users_db.json";
+            oxyAlert(
+              `POTWIERDZENIE: Nowe hasło dla <strong>${targetUser}</strong> zostało zapisane, a plik <code>${fileName}</code> zaktualizowany na serwerze!`,
+              "success",
+              "ZAPIS ZAKOŃCZONY"
+            );
             overlay.classList.remove("active");
             audio.playClick("switch");
           } else {
@@ -1935,7 +1941,7 @@
       };
     }
 
-    // DODAWANIE NOWEGO PROFILU DO SERWERA
+    // DODAWANIE NOWEGO PROFILU DO SERWERA Z POTWIERDZENIEM
     if (btnAdd) {
       btnAdd.addEventListener("click", async () => {
         const uInp = document.getElementById("new-username");
@@ -1952,7 +1958,8 @@
         try {
           const apiRes = await apiRequest("/api/users", "POST", { user: uVal, pass: pVal, role: "custom" });
           if (apiRes.ok && apiRes.data && apiRes.data.success) {
-            oxyAlert(`Konto (${uVal}) zostało utworzone i zapisane w bazie serwera!`, "success", "SUKCES SERWERA");
+            const fileName = apiRes.data.updatedFile || "users_db.json";
+            oxyAlert(`Konto (${uVal}) zostało utworzone i zapisane w pliku <code>${fileName}</code>!`, "success", "DODANO KONTO");
             if (uInp) uInp.value = "";
             if (pInp) pInp.value = "";
             await renderUsers();

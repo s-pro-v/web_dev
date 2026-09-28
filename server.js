@@ -185,8 +185,12 @@ app.post("/api/users", (req, res) => {
     users.push(newUser);
     saveUsers(users);
 
+    console.log(`[AUTH] Dodano użytkownika ${newUser.user} do bazy ${path.basename(DB_FILE)}`);
+
     res.json({
         success: true,
+        updatedFile: path.basename(DB_FILE),
+        message: `Konto ${newUser.user} zostało dodane i zapisane w pliku ${path.basename(DB_FILE)}.`,
         user: { user: newUser.user, role: newUser.role, workerId: newUser.workerId }
     });
 });
@@ -212,9 +216,13 @@ app.put("/api/users/:username/password", (req, res) => {
     userObj.pass = bcrypt.hashSync(newPassword.trim(), 10);
     saveUsers(users);
 
+    console.log(`[AUTH] Zaktualizowano hasło dla ${userObj.user} w pliku ${path.basename(DB_FILE)}`);
+
     res.json({
         success: true,
-        message: `Hasło dla "${userObj.user}" zostało zaktualizowane na serwerze.`
+        updatedFile: path.basename(DB_FILE),
+        user: userObj.user,
+        message: `Hasło dla "${userObj.user}" zostało pomyślnie zaktualizowane w pliku ${path.basename(DB_FILE)}.`
     });
 });
 
@@ -257,7 +265,7 @@ app.delete("/api/users/:username", (req, res) => {
     }
 
     saveUsers(users);
-    res.json({ success: true, message: "Konto usunięte z bazy serwera." });
+    res.json({ success: true, message: `Konto ${username} usunięte z bazy serwera.` });
 });
 
 // ========================================================
@@ -297,7 +305,7 @@ app.post("/api/sync-github", async (req, res) => {
         });
 
         saveUsers(users);
-        res.json({ success: true, addedCount });
+        res.json({ success: true, addedCount, updatedFile: path.basename(DB_FILE) });
     } catch (err) {
         res.status(500).json({ success: false, message: err.message });
     }
