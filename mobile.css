@@ -572,6 +572,12 @@
         flex-direction: column;
         gap: 8px;
         box-sizing: border-box;
+        scrollbar-width: none;
+        max-height: none !important;
+    }
+
+    .shift-modal-body::-webkit-scrollbar {
+        display: none;
     }
 
     .shift-column {
@@ -699,6 +705,13 @@
 
     .users-list-container {
         max-height: calc(100dvh - 230px);
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+    }
+
+    .users-list-container::-webkit-scrollbar {
+        display: none;
     }
 
     .user-item-chassis {

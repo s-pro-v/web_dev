@@ -209,13 +209,13 @@
       overlay.className = "login-overlay hidden";
       overlay.style.zIndex = "9999999";
       overlay.innerHTML = `
-        <div class="login-box card" style="max-width: 380px; text-align: center; border-top: 4px solid var(--warning-color);">
-          <div style="font-size: 40px; color: var(--warning-color); margin-bottom: 1rem;"><i class="fas fa-exclamation-triangle"></i></div>
-          <h2 class="card-title" style="margin-bottom: 1rem;">WYMAGANE POTWIERDZENIE</h2>
-          <p id="oxy-confirm-msg" style="margin-bottom: 1.5rem; color: var(--text-muted); font-size: 14px; line-height: 1.4;"></p>
-          <div style="display: flex; gap: 10px;">
-            <div class="btn-bg" style="flex: 1; display:flex;"><button id="oxy-confirm-no" class="btn" style="flex: 1; justify-content: center; height: 40px; border:none;">ANULUJ</button></div>
-            <div class="btn-bg" style="flex: 1; display:flex;"><button id="oxy-confirm-yes" class="btn active" style="flex: 1; justify-content: center; height: 40px; background: var(--danger-color) !important; border:none; color: #fff;">WYKONAJ</button></div>
+        <div class="login-box card extracted-style-1">
+          <div class="extracted-style-2"><i class="fas fa-exclamation-triangle"></i></div>
+          <h2 class="card-title extracted-style-3">WYMAGANE POTWIERDZENIE</h2>
+          <p id="oxy-confirm-msg" class="extracted-style-4"></p>
+          <div class="extracted-style-5">
+            <div class="btn-bg extracted-style-6"><button id="oxy-confirm-no" class="btn extracted-style-7">ANULUJ</button></div>
+            <div class="btn-bg extracted-style-6"><button id="oxy-confirm-yes" class="btn active extracted-style-8">WYKONAJ</button></div>
           </div>
         </div>
       `;
@@ -381,7 +381,7 @@
 
     const currentTheme = document.documentElement.getAttribute("theme") || "dark";
 
-    let html = `<div class="month-controls tab-chassis" style="display:flex;">`;
+    let html = `<div class="month-controls tab-chassis extracted-style-9">`;
     appState.allMonths.forEach((monthObj, idx) => {
       const monthName = monthObj.meta.month || `Miesiąc ${idx + 1}`;
       const isActive = idx === appState.activeMonthIdx;
@@ -402,7 +402,7 @@
       const wd = weekdays[i] || "";
       const isWeekend = wd === "SO" || wd === "ND";
       html += `<th class="top-header bottom-header day-col-header" data-d="${i}" title="Kliknij, aby sprawdzić kto ma zmianę w dniu ${d}" style="cursor: pointer; ${isWeekend ? "color:red;" : ""}">
-                 ${d}<br><small style="font-size:9px;">${wd}</small>
+                 ${d}<br><small class="extracted-style-10">${wd}</small>
                </th>`;
     });
 
@@ -420,9 +420,9 @@
       html += `<tr>
                 <td class="sticky-col">${w.id != null ? w.id : wIdx + 1}</td>
                 <td class="sticky-col-2 worker-name-cell" data-w="${wIdx}" style="cursor: pointer; padding:0 10px; font-weight:600; font-size:12px; background:var(--card-bg); border-bottom:1px solid var(--border-color); ${rowStyle}">
-                  <div style="display: flex; align-items: center; justify-content: space-between;">
+                  <div class="extracted-style-11">
                     <span>${w.name || "Brak"}</span>
-                    <i class="fas fa-calendar-alt" style="opacity: 0.3;"></i>
+                    <i class="fas fa-calendar-alt extracted-style-12"></i>
                   </div>
                 </td>`;
 
@@ -495,12 +495,12 @@
     modal.id = "worker-cal-overlay";
     modal.className = "shift-modal-overlay";
     modal.innerHTML = `
-      <div class="shift-modal-content" style="max-width: 750px;">
+      <div class="shift-modal-content extracted-style-13">
         <div class="shift-modal-header">
           <h3 class="shift-modal-title" id="worker-cal-title">Kalendarz Pracownika</h3>
           <div class="chassis-socket"><button id="worker-cal-close" class="shift-modal-close">&times;</button></div>
         </div>
-        <div id="worker-cal-body" class="shift-modal-body" style="flex-direction: column;"></div>
+        <div id="worker-cal-body" class="shift-modal-body extracted-style-14"></div>
       </div>
     `;
     document.body.appendChild(modal);
@@ -519,7 +519,7 @@
     const weekdaysArr = currentData.meta.weekdays || [];
 
     const title = document.getElementById("worker-cal-title");
-    title.innerHTML = `<i class="fas fa-calendar-alt" style="color: var(--highlight-color); margin-right: 8px;"></i> ${w.name} <span style="color: var(--text-muted); font-size: 14px; margin-left: 10px;">| ${currentData.meta.month || ""}</span>`;
+    title.innerHTML = `<i class="fas fa-calendar-alt extracted-style-15"></i> ${w.name} <span class="extracted-style-16">| ${currentData.meta.month || ""}</span>`;
 
     let totalHours = 0;
     let dCount = 0;
@@ -531,7 +531,7 @@
     const weekMap = { PN: 0, WT: 1, SR: 2, ŚR: 2, CZ: 3, PT: 4, SO: 5, ND: 6 };
     const firstDayOffset = weekdaysArr.length > 0 ? weekMap[weekdaysArr[0].toUpperCase()] || 0 : 0;
 
-    let gridHtml = `<div class="cal-grid" style="margin-bottom: 25px;">`;
+    let gridHtml = `<div class="cal-grid extracted-style-17">`;
     ["PN", "WT", "ŚR", "CZ", "PT", "SO", "ND"].forEach((day) => {
       gridHtml += `<div class="cal-header">${day}</div>`;
     });
@@ -595,35 +595,35 @@
     modal.id = "shift-modal-overlay";
     modal.className = "shift-modal-overlay";
     modal.innerHTML = `
-      <div class="shift-modal-content" style="max-width: 650px;">
-        <div class="shift-modal-header" style="flex-wrap: wrap; gap: 8px;">
-          <div style="display: flex; align-items: center; gap: 8px;">
-            <h3 class="shift-modal-title" id="shift-modal-title" style="margin: 0;">
-              <i class="fas fa-users-viewfinder" style="color: var(--highlight-color); margin-right: 6px;"></i> Obsada
+      <div class="shift-modal-content extracted-style-18">
+        <div class="shift-modal-header extracted-style-19">
+          <div class="extracted-style-20">
+            <h3 class="shift-modal-title" id="shift-modal-title" class="extracted-style-21">
+              <i class="fas fa-users-viewfinder extracted-style-22"></i> Obsada
             </h3>
           </div>
-          <div class="modal-day-controls" style="display: flex; align-items: center; gap: 6px;">
+          <div class="modal-day-controls extracted-style-23">
             <button id="shift-modal-prev-day" class="btn modal-nav-btn" title="Poprzedni dzień"><i class="fas fa-chevron-left"></i></button>
-            <button id="shift-modal-today" class="btn" style="font-size: 11px; padding: 4px 8px;" title="Przejdź do dzisiaj">Dziś</button>
+            <button id="shift-modal-today" class="btn extracted-style-24" title="Przejdź do dzisiaj">Dziś</button>
             <button id="shift-modal-next-day" class="btn modal-nav-btn" title="Następny dzień"><i class="fas fa-chevron-right"></i></button>
-            <div class="chassis-socket" style="margin-left: 6px;">
+          </div>
+           <div class="chassis-socket extracted-style-25">
               <button id="shift-modal-close" class="shift-modal-close">&times;</button>
             </div>
+        </div>
+
+        <div class="extracted-style-26">
+          <div class="extracted-style-27">
+            <button id="shift-filter-all" class="btn active extracted-style-28">Wszyscy (<span id="shift-cnt-all">0</span>)</button>
+            <button id="shift-filter-day" class="btn extracted-style-29"><i class="fas fa-sun"></i> Dzień (<span id="shift-cnt-day">0</span>)</button>
+            <button id="shift-filter-night" class="btn extracted-style-30"><i class="fas fa-moon"></i> Noc (<span id="shift-cnt-night">0</span>)</button>
+          </div>
+          <div class="input-chassis extracted-style-31">
+            <input type="text" id="shift-search-input" class="shift-input tactile-input" placeholder="Szukaj osoby lub ID..." class="extracted-style-32">
           </div>
         </div>
 
-        <div style="display: flex; gap: 8px; padding: 10px 14px 0 14px; flex-wrap: wrap; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-subtle);">
-          <div style="display: flex; gap: 6px;">
-            <button id="shift-filter-all" class="btn active" style="font-size: 11px; padding: 4px 10px;">Wszyscy (<span id="shift-cnt-all">0</span>)</button>
-            <button id="shift-filter-day" class="btn" style="font-size: 11px; padding: 4px 10px; color: #00d2ff;"><i class="fas fa-sun"></i> Dzień (<span id="shift-cnt-day">0</span>)</button>
-            <button id="shift-filter-night" class="btn" style="font-size: 11px; padding: 4px 10px; color: #ff0055;"><i class="fas fa-moon"></i> Noc (<span id="shift-cnt-night">0</span>)</button>
-          </div>
-          <div class="input-chassis" style="min-width: 160px; max-width: 220px; flex: 1;">
-            <input type="text" id="shift-search-input" class="shift-input tactile-input" placeholder="Szukaj osoby lub ID..." style="height: 28px; font-size: 11px; width: 100%; padding: 0 8px;">
-          </div>
-        </div>
-
-        <div id="shift-modal-body" class="shift-modal-body" style="padding: 12px 14px; max-height: 60vh; overflow-y: auto;"></div>
+        <div id="shift-modal-body" class="shift-modal-body extracted-style-33"></div>
       </div>
     `;
     document.body.appendChild(modal);
@@ -693,8 +693,8 @@
 
     if (title) {
       title.innerHTML = `
-        <i class="fas fa-users-viewfinder" style="color: var(--highlight-color); margin-right: 6px;"></i>
-        Dzień ${dayNum} <small style="font-size: 12px; color: var(--text-muted); font-weight: normal;">(${dayWd}${isToday ? " • DZIŚ" : ""})</small>
+        <i class="fas fa-users-viewfinder extracted-style-22"></i>
+        Dzień ${dayNum} <small class="extracted-style-34">(${dayWd}${isToday ? " • DZIŚ" : ""})</small>
       `;
     }
 
@@ -739,7 +739,7 @@
 
     const buildWorkerRow = (item) => `
       <div class="shift-worker-item" data-w="${item.wIdx}" style="border-left: 4px solid ${item.color}; cursor: pointer;" title="Kliknij, aby otworzyć kalendarz pracownika">
-        <div style="display: flex; align-items: center; gap: 8px;">
+        <div class="extracted-style-20">
           <span class="shift-worker-name">${item.name}</span>
           ${item.groupName ? `<span style="font-size: 9px; padding: 1px 5px; border-radius: 3px; background: rgba(255,255,255,0.08); color: ${item.color};">${item.groupName}</span>` : ""}
         </div>
@@ -753,7 +753,7 @@
     let html = "";
     if (showDay) {
       html += `
-        <div class="shift-column" style="flex: 1; min-width: 240px;">
+        <div class="shift-column extracted-style-35">
           <div class="shift-col-header day"><i class="fas fa-sun"></i> DNIÓWKA (${dayWorkers.length})</div>
           <div class="shift-col-list">
             ${dayWorkers.length ? dayWorkers.map(buildWorkerRow).join("") : "<div class='shift-empty-msg'>Brak obsady</div>"}
@@ -764,7 +764,7 @@
 
     if (showNight) {
       html += `
-        <div class="shift-column" style="flex: 1; min-width: 240px;">
+        <div class="shift-column extracted-style-35">
           <div class="shift-col-header night"><i class="fas fa-moon"></i> NOCKA (${nightWorkers.length})</div>
           <div class="shift-col-list">
             ${nightWorkers.length ? nightWorkers.map(buildWorkerRow).join("") : "<div class='shift-empty-msg'>Brak obsady</div>"}
@@ -774,7 +774,7 @@
     }
 
     if (!html) {
-      html = `<div class="shift-modal-empty" style="width:100%;">Brak pracowników spełniających kryteria.</div>`;
+      html = `<div class="shift-modal-empty extracted-style-36">Brak pracowników spełniających kryteria.</div>`;
     }
 
     body.innerHTML = html;
@@ -1148,31 +1148,31 @@
     const sysInfoList = document.getElementById("system-info-list");
     if (sysInfoList) {
       sysInfoList.innerHTML = `
-        <div class="transaction-item" style="display:flex; align-items:center; gap:10px; padding:6px 0; border-bottom:1px solid var(--border-subtle);">
-          <div class="widget-icon ${serverOnline ? "icon-bg-green" : "icon-bg-red"}" style="width:28px; height:28px; font-size:12px; display:flex; align-items:center; justify-content:center;">
+        <div class="transaction-item extracted-style-37">
+          <div class="widget-icon ${serverOnline ? "icon-bg-green" : "icon-bg-red"}" class="extracted-style-38">
             <i class="fas ${serverOnline ? "fa-shield-halved" : "fa-shield"}"></i>
           </div>
-          <div style="flex:1;">
-            <div style="font-size:11px; font-weight:700; color:var(--text-color);">Autoryzacja Serwera</div>
-            <div style="font-size:10px; color:var(--text-muted); font-family:var(--font-tech);">${serverOnline ? "ONLINE (Bcrypt Express :3000)" : "OFFLINE (Pamięć lokalna)"}</div>
+          <div class="extracted-style-39">
+            <div class="extracted-style-40">Autoryzacja Serwera</div>
+            <div class="extracted-style-41">${serverOnline ? "ONLINE (Bcrypt Express :3000)" : "OFFLINE (Pamięć lokalna)"}</div>
           </div>
         </div>
-        <div class="transaction-item" style="display:flex; align-items:center; gap:10px; padding:6px 0; border-bottom:1px solid var(--border-subtle);">
-          <div class="widget-icon icon-bg-blue" style="width:28px; height:28px; font-size:12px; display:flex; align-items:center; justify-content:center;">
+        <div class="transaction-item extracted-style-37">
+          <div class="widget-icon icon-bg-blue extracted-style-38">
             <i class="fas fa-users"></i>
           </div>
-          <div style="flex:1;">
-            <div style="font-size:11px; font-weight:700; color:var(--text-color);">Pracownicy w Bazie</div>
-            <div style="font-size:10px; color:var(--text-muted); font-family:var(--font-tech);">${currentData.workers.length} osób w grafiku</div>
+          <div class="extracted-style-39">
+            <div class="extracted-style-40">Pracownicy w Bazie</div>
+            <div class="extracted-style-41">${currentData.workers.length} osób w grafiku</div>
           </div>
         </div>
-        <div class="transaction-item" style="display:flex; align-items:center; gap:10px; padding:6px 0;">
-          <div class="widget-icon icon-bg-green" style="width:28px; height:28px; font-size:12px; display:flex; align-items:center; justify-content:center;">
+        <div class="transaction-item extracted-style-42">
+          <div class="widget-icon icon-bg-green extracted-style-38">
             <i class="fas fa-business-time"></i>
           </div>
-          <div style="flex:1;">
-            <div style="font-size:11px; font-weight:700; color:var(--text-color);">Suma Godzin Miesiąca</div>
-            <div style="font-size:10px; color:var(--text-muted); font-family:var(--font-tech);">${totalHours} roboczogodzin</div>
+          <div class="extracted-style-39">
+            <div class="extracted-style-40">Suma Godzin Miesiąca</div>
+            <div class="extracted-style-41">${totalHours} roboczogodzin</div>
           </div>
         </div>
       `;
@@ -1232,7 +1232,7 @@
           endpoint += `?user=${encodeURIComponent(sessionObj.username)}`;
         }
       }
-    } catch (e) {}
+    } catch (e) { }
 
     const res = await apiRequest(endpoint);
     const badge = document.getElementById("server-status-badge");
@@ -1386,10 +1386,10 @@
       const isAdmin = (lowerUser === "admin" || lowerUser === "robert_s");
 
       if (loggedUserLabel) loggedUserLabel.textContent = (username || "ADMIN").toUpperCase();
-      
+
       const addForm = document.querySelector(".users-add-form");
       if (addForm) addForm.style.display = isAdmin ? "flex" : "none";
-      
+
       if (btnSyncUsers) {
         const syncWrap = btnSyncUsers.closest(".btn-bg");
         if (syncWrap) syncWrap.style.display = isAdmin ? "inline-flex" : "none";
@@ -1428,7 +1428,7 @@
     // Szybki wybór profilu na ekranie logowania
     async function renderQuickLoginList() {
       if (!quickListEl) return;
-      quickListEl.innerHTML = '<span style="font-size:11px; color:var(--text-muted);"><i class="fas fa-spinner fa-spin"></i> Wczytywanie profili...</span>';
+      quickListEl.innerHTML = '<span class="extracted-style-43"><i class="fas fa-spinner fa-spin"></i> Wczytywanie profili...</span>';
 
       let users = [];
       const apiRes = await apiRequest("/api/users");
@@ -1629,7 +1629,7 @@
 
     async function renderUsers() {
       if (!listEl) return;
-      listEl.innerHTML = '<div style="padding:15px; text-align:center; color:var(--text-muted);"><i class="fas fa-spinner fa-spin"></i> Pobieranie bazy kont...</div>';
+      listEl.innerHTML = '<div class="extracted-style-44"><i class="fas fa-spinner fa-spin"></i> Pobieranie bazy kont...</div>';
 
       let users = [];
       const apiRes = await apiRequest("/api/users");
@@ -1668,23 +1668,23 @@
             : `<span class="user-role-badge custom-badge"><i class="fas fa-user"></i> UŻYTKOWNIK</span>`);
 
         const isOnline = u.lastSeen && (Date.now() - u.lastSeen < 5 * 60 * 1000); // online jeśli aktywny w ciągu ostatnich 5 minut
-        const onlineTag = isOnline 
-          ? `<span style="color:var(--success-color); font-weight:bold; margin-right:8px;"><i class="fas fa-circle" style="font-size:8px; vertical-align:middle;"></i> ONLINE</span>` 
-          : `<span style="color:var(--text-muted); margin-right:8px;"><i class="fas fa-circle" style="font-size:8px; vertical-align:middle;"></i> OFFLINE</span>`;
+        const onlineTag = isOnline
+          ? `<span class="extracted-style-45"><i class="fas fa-circle extracted-style-46"></i> ONLINE</span>`
+          : `<span class="extracted-style-47"><i class="fas fa-circle extracted-style-46"></i> OFFLINE</span>`;
 
         row.innerHTML = `
           <div class="user-item-main">
             <div class="user-item-identity">
               <i class="fas ${isAdmin ? "fa-shield-halved text-highlight" : "fa-user text-muted"}"></i>
               <div class="user-item-details">
-                <span class="user-item-name">${u.user} ${isSelf ? '<small style="color:var(--highlight-color); font-weight:normal;">(TY)</small>' : ""}</span>
+                <span class="user-item-name">${u.user} ${isSelf ? '<small class="extracted-style-48">(TY)</small>' : ""}</span>
                 <span class="user-item-role">${roleBadge}</span>
               </div>
             </div>
 
-            <div class="user-item-status-tag" style="font-size:11px; color:var(--text-muted); font-family:var(--font-tech);">
+            <div class="user-item-status-tag extracted-style-49">
               ${onlineTag}
-              <i class="fas fa-lock" style="font-size:9px; margin-right:3px;"></i> Bcrypt Hash
+              <i class="fas fa-lock extracted-style-50"></i> Bcrypt Hash
             </div>
           </div>
 
@@ -1787,20 +1787,20 @@
         overlay.id = "change-pass-overlay";
         overlay.className = "shift-modal-overlay";
         overlay.innerHTML = `
-          <div class="shift-modal-content" style="max-width: 380px;">
+          <div class="shift-modal-content shift-modal-change-pass">
             <div class="shift-modal-header">
-              <h3 class="shift-modal-title"><i class="fas fa-key" style="color:var(--highlight-color); margin-right:8px;"></i> Zmiana Hasła</h3>
+              <h3 class="shift-modal-title"><i class="fas fa-key shift-icon-highlight"></i> Zmiana Hasła</h3>
               <div class="chassis-socket"><button id="btn-close-change-pass" class="shift-modal-close">&times;</button></div>
             </div>
-            <div class="shift-modal-body" style="flex-direction: column; gap: 12px; padding: 1.25rem;">
-              <p style="font-size: 13px; color: var(--text-color);">Zmień hasło dla konta: <strong id="change-pass-user-label" style="color:var(--highlight-color);"></strong></p>
-              <div class="input-chassis" style="width: 100%;">
-                <input type="password" id="input-new-pass" class="shift-input tactile-input" placeholder="Wprowadź nowe hasło..." style="width: 100%; height: 36px; padding: 0 10px;">
+            <div class="shift-modal-body change-pass-body">
+              <p class="change-pass-prompt">Zmień hasło dla konta: <strong id="change-pass-user-label" class="change-pass-username"></strong></p>
+              <div class="input-chassis change-pass-input-wrapper">
+                <input type="password" id="input-new-pass" class="shift-input tactile-input change-pass-input" placeholder="Wprowadź nowe hasło...">
               </div>
-              <div class="input-chassis" style="width: 100%;">
-                <input type="password" id="input-new-pass-confirm" class="shift-input tactile-input" placeholder="Powtórz nowe hasło..." style="width: 100%; height: 36px; padding: 0 10px;">
+              <div class="input-chassis change-pass-input-wrapper">
+                <input type="password" id="input-new-pass-confirm" class="shift-input tactile-input change-pass-input" placeholder="Powtórz nowe hasło...">
               </div>
-              <div style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 8px;">
+              <div class="change-pass-actions">
                 <div class="btn-bg"><button type="button" id="btn-cancel-pass" class="btn">ANULUJ</button></div>
                 <div class="btn-bg"><button type="button" id="btn-submit-pass" class="btn active">ZAPISZ HASŁO</button></div>
               </div>
@@ -2071,4 +2071,4 @@ document.addEventListener("click", (e) => {
       window._oxyAudio.playClick("normal");
     }
   }
-});
+});

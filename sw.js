@@ -1,4 +1,4 @@
-const CACHE_NAME = "oxy-os-cache-v3";
+const CACHE_NAME = "oxy-os-cache-v4";
 
 const PRECACHE_ASSETS = [
     "./",
