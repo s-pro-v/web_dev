@@ -59,7 +59,7 @@
           osc.stop(now + 0.015);
         }
       } catch (e) {
-        // Ignoruj w przypadku braku uprawnień
+        // Ignoruj w przypadku braku uprawnień audio
       }
     }
   }
@@ -247,12 +247,12 @@
   const GITHUB_URL = "https://raw.githubusercontent.com/s-pro-v/json-lista/refs/heads/main/mobile-grafik.json";
 
   const groupMetadata = {
-    d: { colorLight: "#d35400", colorDark: "#cc8a28" },
-    s: { colorLight: "#0056b3", colorDark: "#0052cc" },
-    p: { colorLight: "#3178c6", colorDark: "#5981cc" },
-    k: { colorLight: "#c0392b", colorDark: "#cc6f44" },
-    m: { colorLight: "#b7950b", colorDark: "#cccc00" },
-    y: { colorLight: "#196f3d", colorDark: "#00cc00" }
+    d: { colorLight: "#d35400", colorDark: "#cc8a28", name: "D" },
+    s: { colorLight: "#0056b3", colorDark: "#0052cc", name: "S" },
+    p: { colorLight: "#3178c6", colorDark: "#5981cc", name: "P" },
+    k: { colorLight: "#c0392b", colorDark: "#cc6f44", name: "K" },
+    m: { colorLight: "#b7950b", colorDark: "#cccc00", name: "M" },
+    y: { colorLight: "#196f3d", colorDark: "#00cc00", name: "Y" }
   };
 
   function getDisplayShiftCode(rawShift) {
@@ -586,7 +586,7 @@
   }
 
   let activeShiftModalDayIdx = 0;
-  let activeShiftFilter = "all"; // 'all' | 'day' | 'night'
+  let activeShiftFilter = "all";
   let activeShiftSearch = "";
 
   function createShiftListModal() {
@@ -643,7 +643,6 @@
       openShiftListModal(null, activeShiftFilter);
     });
 
-    // Filtry
     const btnAll = document.getElementById("shift-filter-all");
     const btnDay = document.getElementById("shift-filter-day");
     const btnNight = document.getElementById("shift-filter-night");
@@ -710,7 +709,6 @@
         const color = groupData ? (currentTheme === "light" ? groupData.colorLight : groupData.colorDark) : "var(--text-muted)";
         const groupName = groupData ? groupData.name : "";
 
-        // Wyszukiwanie
         if (activeShiftSearch) {
           const wName = (w.name || "").toLowerCase();
           const wId = String(w.id != null ? w.id : "");
@@ -779,7 +777,6 @@
 
     body.innerHTML = html;
 
-    // Kliknięcie w pracownika w liście otwiera jego kalendarz
     body.querySelectorAll(".shift-worker-item").forEach(item => {
       item.addEventListener("click", () => {
         const wIdx = parseInt(item.dataset.w, 10);
@@ -935,7 +932,6 @@
       });
     }
 
-    // Sparkline Dniówka
     const incEl = document.getElementById("incomeSparkline");
     if (incEl) {
       charts.income = new Chart(incEl.getContext("2d"), {
@@ -961,7 +957,6 @@
       });
     }
 
-    // Sparkline Nocka
     const outEl = document.getElementById("outcomeSparkline");
     if (outEl) {
       charts.outcome = new Chart(outEl.getContext("2d"), {
@@ -1034,7 +1029,6 @@
       });
     });
 
-    // 1. Karta czasu w sidebarze
     const todayNum = new Date().getDate();
     const todayStr = String(todayNum);
     const todayIdx = daysArr.indexOf(todayStr);
@@ -1050,7 +1044,6 @@
       tcDay.textContent = `${daysArr[resolvedIdx]} ${wd}`.trim();
     }
 
-    // 2. Widżety Dniówka i Nocka (Dziś)
     const todayDayStaff = resolvedIdx !== -1 ? (dailyDayCount[resolvedIdx] || 0) : 0;
     const todayNightStaff = resolvedIdx !== -1 ? (dailyNightCount[resolvedIdx] || 0) : 0;
 
@@ -1059,7 +1052,6 @@
     if (dayCountEl) dayCountEl.innerHTML = `${todayDayStaff} <span class="cents">osób</span>`;
     if (nightCountEl) nightCountEl.innerHTML = `${todayNightStaff} <span class="cents">osób</span>`;
 
-    // Trendy vs wczoraj
     if (resolvedIdx > 0) {
       const prevDayStaff = dailyDayCount[resolvedIdx - 1] || 0;
       const prevNightStaff = dailyNightCount[resolvedIdx - 1] || 0;
@@ -1095,7 +1087,6 @@
       }
     }
 
-    // 3. Sparklines
     if (charts.income) {
       charts.income.data.labels = daysArr;
       charts.income.data.datasets[0].data = dailyDayCount;
@@ -1107,7 +1098,6 @@
       charts.outcome.update();
     }
 
-    // 4. Główne wykresy
     if (charts.main) {
       charts.main.data.labels = currentData.workers.map((w) => (w.name ? w.name.split(" ")[0] : `ID:${w.id}`));
       charts.main.data.datasets[0].data = currentData.workers.map((w) => {
@@ -1135,7 +1125,6 @@
       charts.wave.update();
     }
 
-    // 5. Ostatnia aktualizacja i system info w sidebarze
     const lastUpdateEl = document.getElementById("last-update-time");
     if (lastUpdateEl) {
       const nowStr = new Date().toLocaleTimeString("pl-PL", { hour: "2-digit", minute: "2-digit" });
@@ -1154,7 +1143,7 @@
           </div>
           <div class="extracted-style-39">
             <div class="extracted-style-40">Autoryzacja Serwera</div>
-            <div class="extracted-style-41">${serverOnline ? "ONLINE (Bcrypt Express :3000)" : "OFFLINE (Pamięć lokalna)"}</div>
+            <div class="extracted-style-41">${serverOnline ? "ONLINE (Bcrypt Express :3000)" : "OFFLINE (Brak połączenia)"}</div>
           </div>
         </div>
         <div class="transaction-item extracted-style-37">
@@ -1180,26 +1169,21 @@
   }
 
   // ==========================================
-  // KOMUNIKACJA Z BACKENDEM EXPRESS (SERVER.JS) & RENDER.COM
+  // KOMUNIKACJA Z BACKENDEM EXPRESS & RENDER.COM
   // ==========================================
   function getApiBase() {
     const custom = localStorage.getItem("oxy_render_url");
     if (custom && custom.trim()) {
       return custom.trim().replace(/\/+$/, "");
     }
-    // Automatyczna detekcja:
     if (window.location.protocol.startsWith("http")) {
-      // Jeśli uruchomiony lokalnie
       if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") {
         return window.location.port === "3000" ? "" : "http://localhost:3000";
       }
-      // Jeśli uruchomiony na Renderze (np. *.onrender.com) lub innym serwerze Node.js:
-      // Zapytania względne "" (/api/...) łączą się z bieżącym serwerem bez problemów CORS/Mixed-Content!
       if (!window.location.hostname.endsWith("github.io")) {
         return "";
       }
     }
-    // Fallback dla podglądu bezpośredniego z dysku (file://) lub GitHub Pages
     return "http://localhost:3000";
   }
 
@@ -1257,7 +1241,7 @@
         modalStatus.style.color = "var(--success-color)";
       }
       if (modalDetails) {
-        modalDetails.textContent = `Połączono z: ${currentBase} (v${res.data.version}, użytkownicy: ${res.data.usersCount})`;
+        modalDetails.textContent = `Połączono z: ${currentBase} (v${res.data.version}, konta: ${res.data.usersCount})`;
       }
       if (loginStatus && loginStatusText) {
         loginStatus.classList.remove("offline");
@@ -1328,7 +1312,7 @@
           oxyAlert("Połączono pomyślnie z backendem!", "success", "POŁĄCZONO");
           if (modal) modal.classList.remove("active");
         } else {
-          oxyAlert("Brak odpowiedzi z podanego adresu. Upewnij się, że instancja na Renderze jest wybudzona (w darmowym planie może to zająć do 30 sekund).", "warning", "STATUS SERWERA");
+          oxyAlert("Brak odpowiedzi z podanego adresu. Upewnij się, że instancja backendu jest wybudzona.", "warning", "STATUS SERWERA");
         }
       });
     }
@@ -1345,18 +1329,11 @@
   }
 
   // ==========================================
-  // ZARZĄDZANIE UŻYTKOWNIKAMI & LOGOWANIE
+  // ZARZĄDZANIE UŻYTKOWNIKAMI & LOGOWANIE (SERVER-ONLY)
   // ==========================================
   function initLoginSystem() {
-    const USERS_KEY = "oxy_os_users";
     const SESSION_KEY = "oxy_os_user";
-
-    if (!localStorage.getItem(USERS_KEY)) {
-      localStorage.setItem(
-        USERS_KEY,
-        JSON.stringify([{ user: "admin", pass: "admin123", role: "admin" }])
-      );
-    }
+    const SAVED_PROFILES_KEY = "oxy_os_saved_profiles";
 
     const loginOverlay = document.getElementById("login-overlay");
     const dashboardWrapper = document.querySelector(".dashboard-wrapper");
@@ -1369,8 +1346,53 @@
     const quickListEl = document.getElementById("login-quick-list");
     const loggedUserLabel = document.getElementById("logged-user-name");
     const btnTogglePass = document.getElementById("btn-toggle-password");
+    let showAllUsersToggle = false;
 
-    // Podgląd hasła
+    function getSavedProfiles() {
+      try {
+        const raw = localStorage.getItem(SAVED_PROFILES_KEY);
+        return raw ? JSON.parse(raw) : [];
+      } catch (e) {
+        return [];
+      }
+    }
+
+    function saveProfileToRemembered(userObj) {
+      if (!userObj) return;
+      const username = userObj.username || userObj.user;
+      if (!username) return;
+      const role = userObj.role || "worker";
+      const workerId = userObj.workerId ?? null;
+
+      const profiles = [{
+        username: username,
+        role: role,
+        workerId: workerId,
+        lastLogin: Date.now()
+      }];
+      localStorage.setItem(SAVED_PROFILES_KEY, JSON.stringify(profiles));
+    }
+
+    function removeSavedProfile(username) {
+      localStorage.removeItem(SAVED_PROFILES_KEY);
+      renderQuickLoginList();
+      if (typeof oxyAlert === "function") {
+        oxyAlert(`Usunięto zapamiętany profil: <strong>${username}</strong>`, "info", "PROFIL");
+      }
+    }
+
+    function formatRelativeTime(ts) {
+      if (!ts) return "";
+      const diffMs = Date.now() - ts;
+      const diffMins = Math.floor(diffMs / 60000);
+      if (diffMins < 1) return "Przed chwilą";
+      if (diffMins < 60) return `${diffMins} min temu`;
+      const diffHours = Math.floor(diffMins / 60);
+      if (diffHours < 24) return `${diffHours} godz. temu`;
+      const date = new Date(ts);
+      return `${date.toLocaleDateString("pl-PL")} ${date.toLocaleTimeString("pl-PL", { hour: "2-digit", minute: "2-digit" })}`;
+    }
+
     if (btnTogglePass && passInput) {
       btnTogglePass.addEventListener("click", () => {
         const isPass = passInput.type === "password";
@@ -1410,7 +1432,6 @@
       syncDashboardCharts();
     }
 
-    // Weryfikacja aktywnej sesji
     const savedSession = localStorage.getItem(SESSION_KEY);
     if (savedSession) {
       try {
@@ -1425,59 +1446,182 @@
       renderQuickLoginList();
     }
 
-    // Szybki wybór profilu na ekranie logowania
+    // Pobieranie listy kont BEZPOŚREDNIO z serwera
     async function renderQuickLoginList() {
       if (!quickListEl) return;
-      quickListEl.innerHTML = '<span class="extracted-style-43"><i class="fas fa-spinner fa-spin"></i> Wczytywanie profili...</span>';
 
-      let users = [];
+      const savedProfiles = getSavedProfiles();
+
+      let allUsers = [];
       const apiRes = await apiRequest("/api/users");
       if (apiRes.ok && apiRes.data && Array.isArray(apiRes.data.users)) {
-        users = apiRes.data.users;
-        serverUsersCache = users;
-        localStorage.setItem(USERS_KEY, JSON.stringify(users));
+        allUsers = apiRes.data.users;
+        serverUsersCache = allUsers;
       } else {
-        users = JSON.parse(localStorage.getItem(USERS_KEY) || "[]");
-        if (users.length === 0) users = [{ user: "admin", role: "admin" }];
+        allUsers = serverUsersCache.length > 0 ? serverUsersCache : [{ user: "admin", role: "admin" }];
       }
 
       quickListEl.innerHTML = "";
 
-      // Zawsze admin na początku, potem pozostali
-      const sortedUsers = [...users].sort((a, b) => {
+      if (savedProfiles.length > 0 && !showAllUsersToggle) {
+        const p = savedProfiles[0];
+
+        if (userInput && !userInput.value) {
+          userInput.value = p.username;
+        }
+
+        const container = document.createElement("div");
+        container.className = "saved-profiles-list";
+
+        const isAdmin = (p.role || "").toLowerCase() === "admin" || p.username.toLowerCase() === "admin";
+
+        const card = document.createElement("div");
+        card.className = "saved-profile-card last-used active";
+        card.title = `Kliknij, aby wybrać profil ${p.username}`;
+
+        card.innerHTML = `
+          <div class="saved-profile-left">
+            <div class="saved-profile-avatar ${isAdmin ? "admin" : ""}">
+              <i class="fas ${isAdmin ? "fa-shield-halved" : "fa-user"}"></i>
+            </div>
+            <div class="saved-profile-info">
+              <div class="saved-profile-name-row">
+                <span class="saved-profile-name">${p.username}</span>
+                <span class="saved-profile-badge last-used">Ostatnio zalogowany</span>
+                ${isAdmin ? '<span class="saved-profile-badge admin">ADMIN</span>' : ''}
+              </div>
+              <div class="saved-profile-meta">
+                <i class="fas fa-clock"></i> ${formatRelativeTime(p.lastLogin)}
+              </div>
+            </div>
+          </div>
+          <div class="saved-profile-right">
+            <button type="button" class="saved-profile-select-btn" title="Wybierz profil">
+              <i class="fas fa-arrow-right"></i>
+            </button>
+            <button type="button" class="saved-profile-remove" title="Usuń ten profil z szybkiego wyboru">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+        `;
+
+        const selectAction = () => {
+          if (typeof audio !== "undefined" && audio.playClick) audio.playClick("normal");
+          if (userInput) userInput.value = p.username;
+          if (passInput) {
+            passInput.value = "";
+            passInput.focus();
+          }
+          if (typeof oxyAlert === "function") {
+            oxyAlert(`Wybrano profil: <strong>${p.username}</strong>. Wprowadź hasło.`, "info", "PROFIL");
+          }
+        };
+
+        card.addEventListener("click", selectAction);
+
+        const removeBtn = card.querySelector(".saved-profile-remove");
+        if (removeBtn) {
+          removeBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            if (typeof audio !== "undefined" && audio.playClick) audio.playClick("switch");
+            removeSavedProfile(p.username);
+          });
+        }
+
+        container.appendChild(card);
+        quickListEl.appendChild(container);
+
+        const toggleBtn = document.createElement("button");
+        toggleBtn.type = "button";
+        toggleBtn.className = "btn-toggle-all-users";
+        toggleBtn.innerHTML = `<i class="fas fa-users"></i> Zaloguj na inne konto z serwera (${allUsers.length})`;
+        toggleBtn.addEventListener("click", () => {
+          showAllUsersToggle = true;
+          renderQuickLoginList();
+        });
+        quickListEl.appendChild(toggleBtn);
+        return;
+      }
+
+      const sortedUsers = [...allUsers].sort((a, b) => {
         if (a.user === "admin") return -1;
         if (b.user === "admin") return 1;
-        return a.user.localeCompare(b.user);
+        return (a.user || "").localeCompare(b.user || "");
       });
 
-      // Wyświetlamy do 10 profili dla przejrzystości
-      sortedUsers.slice(0, 12).forEach((u) => {
-        const isAdmin = u.user === "admin";
-        const btn = document.createElement("button");
-        btn.type = "button";
-        btn.className = `quick-user-btn ${isAdmin ? "admin" : ""}`;
-        btn.innerHTML = `<i class="fas ${isAdmin ? "fa-shield-halved" : "fa-user"}"></i><span>${u.user}</span>`;
-        btn.title = isAdmin ? "Administrator systemu" : (u.workerId != null ? `Pracownik [ID: ${u.workerId}]` : "Konto użytkownika");
-
-        btn.addEventListener("click", () => {
-          audio.playClick("normal");
-          if (userInput) {
-            userInput.value = u.user;
-            if (passInput) {
-              passInput.value = "";
-              passInput.focus();
-            }
-          }
-          document.querySelectorAll(".quick-user-btn").forEach((b) => b.classList.remove("selected"));
-          btn.classList.add("selected");
-          oxyAlert(`Wybrano profil: <strong>${u.user}</strong>. Wprowadź hasło.`, "info", "PROFIL");
+      if (savedProfiles.length > 0) {
+        const backBtn = document.createElement("button");
+        backBtn.type = "button";
+        backBtn.className = "btn-toggle-all-users back-to-saved";
+        backBtn.innerHTML = `<i class="fas fa-arrow-left"></i> Powrót do zapamiętanego profilu`;
+        backBtn.addEventListener("click", () => {
+          showAllUsersToggle = false;
+          renderQuickLoginList();
         });
+        quickListEl.appendChild(backBtn);
+      }
 
-        quickListEl.appendChild(btn);
-      });
+      const searchChassis = document.createElement("div");
+      searchChassis.className = "input-chassis quick-search-chassis";
+      searchChassis.innerHTML = `
+        <input type="text" class="shift-input quick-search-input tactile-input" placeholder="Szukaj profilu na serwerze..." spellcheck="false">
+      `;
+      quickListEl.appendChild(searchChassis);
+
+      const gridEl = document.createElement("div");
+      gridEl.className = "all-users-grid";
+
+      function renderFilteredUsers(filterText = "") {
+        gridEl.innerHTML = "";
+        const cleanFilter = filterText.toLowerCase().trim();
+        const filtered = sortedUsers.filter((u) => (u.user || "").toLowerCase().includes(cleanFilter));
+
+        if (filtered.length === 0) {
+          gridEl.innerHTML = '<div class="quick-no-results">Brak wyników na serwerze</div>';
+          return;
+        }
+
+        filtered.forEach((u) => {
+          const isAdmin = u.user === "admin";
+          const btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = `quick-user-btn ${isAdmin ? "admin" : ""}`;
+          btn.innerHTML = `<i class="fas ${isAdmin ? "fa-shield-halved" : "fa-user"}"></i><span>${u.user}</span>`;
+          btn.title = isAdmin ? "Administrator systemu" : (u.workerId != null ? `Pracownik [ID: ${u.workerId}]` : "Konto użytkownika");
+
+          btn.addEventListener("click", () => {
+            if (typeof audio !== "undefined" && audio.playClick) audio.playClick("normal");
+            if (userInput) {
+              userInput.value = u.user;
+              if (passInput) {
+                passInput.value = "";
+                passInput.focus();
+              }
+            }
+            document.querySelectorAll(".quick-user-btn").forEach((b) => b.classList.remove("selected"));
+            btn.classList.add("selected");
+            if (typeof oxyAlert === "function") {
+              oxyAlert(`Wybrano profil: <strong>${u.user}</strong>. Wprowadź hasło.`, "info", "PROFIL");
+            }
+          });
+
+          gridEl.appendChild(btn);
+        });
+      }
+
+      renderFilteredUsers();
+
+      const searchInput = searchChassis.querySelector(".quick-search-input");
+      if (searchInput) {
+        searchInput.addEventListener("input", (e) => {
+          renderFilteredUsers(e.target.value);
+        });
+      }
+
+      quickListEl.appendChild(gridEl);
     }
 
-    // Bezpieczne logowanie przez serwer (Bcrypt) z fallbackiem offline
+    // GŁÓWNA WERYFIKACJA LOGOWANIA WYSYŁANA DO SERWERA
     async function performLogin(username, password) {
       const userVal = String(username || "").trim();
       const passVal = String(password || "").trim();
@@ -1489,62 +1633,41 @@
       }
 
       const loginBtn = document.getElementById("btn-login");
-      if (loginBtn) loginBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> WERYFIKACJA...';
+      if (loginBtn) loginBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> WERYFIKACJA Z SERWEREM...';
 
       try {
-        // 1. Próba logowania przez backend Express
         const apiRes = await apiRequest("/api/login", "POST", { login: userVal, password: passVal });
 
         if (apiRes.ok && apiRes.data && apiRes.data.success) {
           serverOnline = true;
           const userObj = apiRes.data.user;
+          const rememberCheck = document.getElementById("login-remember-me");
+          if (!rememberCheck || rememberCheck.checked) {
+            saveProfileToRemembered(userObj);
+          }
           localStorage.setItem(SESSION_KEY, JSON.stringify(userObj));
+
           unlockUi(userObj);
           audio.playClick("switch");
-          oxyAlert(`Zalogowano jako: <strong>${userObj.username}</strong> (${userObj.role.toUpperCase()})`, "success", "AUTORYZACJA OXY_OS");
+          oxyAlert(`Zalogowano jako: <strong>${userObj.username}</strong> (${userObj.role.toUpperCase()})`, "success", "AUTORYZACJA SERWERA");
           return true;
-        } else if (apiRes.status === 401 || apiRes.status === 429) {
-          // Błędne hasło lub zablokowany IP z serwera
-          const errText = apiRes.data?.message || "Odmowa dostępu: nieprawidłowe hasło lub login.";
-          if (errorMsg) {
-            errorMsg.textContent = errText;
-            errorMsg.style.display = "block";
-          }
-          if (passInput) {
-            passInput.value = "";
-            passInput.focus();
-          }
-          audio.playClick("heavy");
-          oxyAlert(errText, "error", "ODMOWA DOSTĘPU");
-          return false;
         }
 
-        // 2. Fallback offline (gdy serwer Express jest niedostępny)
-        const localUsers = JSON.parse(localStorage.getItem(USERS_KEY) || "[]");
-        const found = localUsers.find(
-          (u) => (u.user || "").toLowerCase() === userVal.toLowerCase() && (u.pass || "").trim() === passVal
-        ) || (userVal.toLowerCase() === "admin" && passVal === "admin123" ? { user: "admin", role: "admin" } : null);
+        const errText = apiRes.data?.message || (apiRes.status === 0
+          ? "Brak połączenia z serwerem. Upewnij się, że backend jest uruchomiony."
+          : "Odmowa dostępu: nieprawidłowe hasło lub login.");
 
-        if (found) {
-          const userObj = { username: found.user, role: found.role || "worker", workerId: found.workerId || null };
-          localStorage.setItem(SESSION_KEY, JSON.stringify(userObj));
-          unlockUi(userObj);
-          audio.playClick("switch");
-          oxyAlert(`Zalogowano w trybie offline jako: <strong>${userObj.username}</strong>`, "warning", "TRYB OFFLINE");
-          return true;
-        } else {
-          if (errorMsg) {
-            errorMsg.textContent = "Odmowa dostępu. Nieprawidłowy login lub hasło.";
-            errorMsg.style.display = "block";
-          }
-          if (passInput) {
-            passInput.value = "";
-            passInput.focus();
-          }
-          audio.playClick("heavy");
-          oxyAlert("Nieprawidłowe dane logowania.", "error", "BŁĄD LOGOWANIA");
-          return false;
+        if (errorMsg) {
+          errorMsg.textContent = errText;
+          errorMsg.style.display = "block";
         }
+        if (passInput) {
+          passInput.value = "";
+          passInput.focus();
+        }
+        audio.playClick("heavy");
+        oxyAlert(errText, "error", "BŁĄD AUTORYZACJI");
+        return false;
       } finally {
         if (loginBtn) loginBtn.innerHTML = "ZALOGUJ";
       }
@@ -1558,7 +1681,6 @@
     if (passInput) passInput.addEventListener("keypress", (e) => { if (e.key === "Enter") attemptLogin(); });
     if (userInput) userInput.addEventListener("keypress", (e) => { if (e.key === "Enter" && passInput) passInput.focus(); });
 
-    // Wylogowanie
     const btnLogout = document.getElementById("btn-logout");
     if (btnLogout) {
       btnLogout.addEventListener("click", () => {
@@ -1569,7 +1691,6 @@
       });
     }
 
-    // Modal zarządzania użytkownikami
     const modalUsers = document.getElementById("users-modal-overlay");
     const btnCloseUsers = document.getElementById("users-modal-close");
     const listEl = document.getElementById("users-list");
@@ -1577,49 +1698,22 @@
 
     async function syncUsersFromSchedule(silent = false) {
       if (btnSyncUsers) {
-        btnSyncUsers.innerHTML = '<i class="fas fa-spinner fa-spin"></i> SYNCHRONIZACJA...';
+        btnSyncUsers.innerHTML = '<i class="fas fa-spinner fa-spin"></i> SYNCHRONIZACJA Z SERWEREM...';
       }
 
       try {
-        // Próba synchronizacji przez serwer backendowy
         const apiRes = await apiRequest("/api/sync-github", "POST");
         if (apiRes.ok && apiRes.data && apiRes.data.success) {
           const added = apiRes.data.addedCount || 0;
           await renderUsers();
           renderQuickLoginList();
           checkServerStatus();
-          if (!silent) oxyAlert(`Zsynchronizowano konta z GitHub (dodano ${added} nowych kont z haszowaniem Bcrypt).`, "success", "SYNCHRONIZACJA SERWERA");
+          if (!silent) oxyAlert(`Zsynchronizowano konta na serwerze (dodano ${added} nowych profili Bcrypt).`, "success", "SYNCHRONIZACJA SERWERA");
           return;
         }
-
-        // Fallback: synchronizacja lokalna
-        const users = JSON.parse(localStorage.getItem(USERS_KEY) || "[]");
-        let addedCount = 0;
-
-        appState.allMonths.forEach((m) => {
-          if (!m.workers || !Array.isArray(m.workers)) return;
-          m.workers.forEach((w) => {
-            if (!w.name || w.name.trim() === "" || w.name === "Przykładowy Pracownik") return;
-            const username = w.name.trim().replace(/\s+/g, "_");
-            if (!users.some((u) => (u.user || "").toLowerCase() === username.toLowerCase())) {
-              const firstName = w.name.trim().split(" ")[0];
-              const pass = `${firstName}${w.id != null ? w.id : "123"}`;
-              users.push({ user: username, pass: pass, workerId: w.id || null, role: "worker" });
-              addedCount++;
-            }
-          });
-        });
-
-        if (addedCount > 0) {
-          localStorage.setItem(USERS_KEY, JSON.stringify(users));
-          await renderUsers();
-          renderQuickLoginList();
-          if (!silent) oxyAlert(`Lokalnie dodano ${addedCount} kont z grafiku.`, "success", "SYNCHRONIZACJA LOKALNA");
-        } else if (!silent) {
-          oxyAlert("Wszyscy pracownicy posiadają już konta.", "info", "SYNCHRONIZACJA");
-        }
+        throw new Error(apiRes.data?.message || "Błąd komunikacji z serwerem");
       } catch (err) {
-        if (!silent) oxyAlert("Błąd synchronizacji: " + err.message, "error", "BŁĄD");
+        if (!silent) oxyAlert("Błąd synchronizacji serwera: " + err.message, "error", "BŁĄD");
       } finally {
         if (btnSyncUsers) {
           btnSyncUsers.innerHTML = '<i class="fas fa-rotate"></i> SYNCHRONIZUJ';
@@ -1629,16 +1723,15 @@
 
     async function renderUsers() {
       if (!listEl) return;
-      listEl.innerHTML = '<div class="extracted-style-44"><i class="fas fa-spinner fa-spin"></i> Pobieranie bazy kont...</div>';
+      listEl.innerHTML = '<div class="extracted-style-44"><i class="fas fa-spinner fa-spin"></i> Pobieranie kont z serwera...</div>';
 
       let users = [];
       const apiRes = await apiRequest("/api/users");
       if (apiRes.ok && apiRes.data && Array.isArray(apiRes.data.users)) {
         users = apiRes.data.users;
         serverUsersCache = users;
-        localStorage.setItem(USERS_KEY, JSON.stringify(users));
       } else {
-        users = JSON.parse(localStorage.getItem(USERS_KEY) || "[]");
+        users = serverUsersCache;
       }
 
       let currentSessionUser = "";
@@ -1657,7 +1750,7 @@
 
       users.forEach((u, idx) => {
         const isAdmin = u.user === "admin";
-        const isSelf = u.user.toLowerCase() === currentSessionUser.toLowerCase();
+        const isSelf = (u.user || "").toLowerCase() === currentSessionUser.toLowerCase();
         const row = document.createElement("div");
         row.className = "user-item-chassis";
 
@@ -1667,7 +1760,7 @@
             ? `<span class="user-role-badge worker-badge"><i class="fas fa-id-badge"></i> PRACOWNIK ${u.workerId != null ? `[ID: ${u.workerId}]` : ""}</span>`
             : `<span class="user-role-badge custom-badge"><i class="fas fa-user"></i> UŻYTKOWNIK</span>`);
 
-        const isOnline = u.lastSeen && (Date.now() - u.lastSeen < 5 * 60 * 1000); // online jeśli aktywny w ciągu ostatnich 5 minut
+        const isOnline = u.lastSeen && (Date.now() - u.lastSeen < 5 * 60 * 1000);
         const onlineTag = isOnline
           ? `<span class="extracted-style-45"><i class="fas fa-circle extracted-style-46"></i> ONLINE</span>`
           : `<span class="extracted-style-47"><i class="fas fa-circle extracted-style-46"></i> OFFLINE</span>`;
@@ -1684,14 +1777,14 @@
 
             <div class="user-item-status-tag extracted-style-49">
               ${onlineTag}
-              <i class="fas fa-lock extracted-style-50"></i> Bcrypt Hash
+              <i class="fas fa-lock extracted-style-50"></i> Serwer Bcrypt
             </div>
           </div>
 
           <div class="user-item-actions">
             ${(isCurrentAdmin || isSelf)
             ? `<div class="btn-bg">
-                     <button type="button" class="btn btn-change-pass" data-username="${u.user}" title="Zmień hasło dla konta ${u.user}">
+                     <button type="button" class="btn btn-change-pass" data-username="${u.user}" title="Zmień hasło na serwerze dla ${u.user}">
                        <i class="fas fa-key"></i> <span class="btn-text">HASŁO</span>
                      </button>
                    </div>`
@@ -1708,7 +1801,7 @@
             ${isAdmin || !isCurrentAdmin
             ? (isAdmin ? `<div class="admin-locked-badge" title="Konto chronione"><i class="fas fa-lock"></i></div>` : "")
             : `<div class="btn-bg">
-                     <button type="button" class="btn btn-icon delete-user-btn" data-username="${u.user}" data-idx="${idx}" title="Usuń konto">
+                     <button type="button" class="btn btn-icon delete-user-btn" data-username="${u.user}" data-idx="${idx}" title="Usuń konto z serwera">
                        <i class="fas fa-trash"></i>
                      </button>
                    </div>`
@@ -1723,10 +1816,8 @@
       btnSyncUsers.addEventListener("click", () => syncUsersFromSchedule(false));
     }
 
-    // Obsługa akcji na liście kont
     if (listEl) {
       listEl.addEventListener("click", async (e) => {
-        // 1. Zmiana hasła
         const passBtn = e.target.closest(".btn-change-pass");
         if (passBtn) {
           const targetUser = passBtn.dataset.username;
@@ -1734,7 +1825,6 @@
           return;
         }
 
-        // 2. Przełączenie użytkownika
         const loginBtn = e.target.closest(".btn-login-as");
         if (loginBtn) {
           const targetUser = loginBtn.dataset.username;
@@ -1748,11 +1838,10 @@
               passInput.focus();
             }
           }
-          oxyAlert(`Wybrano konto <strong>${targetUser}</strong>. Wprowadź hasło.`, "info", "LOGOWANIE");
+          oxyAlert(`Wybrano konto <strong>${targetUser}</strong>. Wprowadź hasło z serwera.`, "info", "LOGOWANIE");
           return;
         }
 
-        // 3. Usunięcie użytkownika
         const deleteBtn = e.target.closest(".delete-user-btn");
         if (deleteBtn) {
           const targetUser = deleteBtn.dataset.username;
@@ -1761,25 +1850,21 @@
             return;
           }
 
-          oxyConfirm(`Czy na pewno trwale usunąć profil "${targetUser}"?`, async () => {
+          oxyConfirm(`Czy na pewno trwale usunąć profil "${targetUser}" z serwera?`, async () => {
             const apiRes = await apiRequest(`/api/users/${encodeURIComponent(targetUser)}`, "DELETE");
             if (apiRes.ok) {
-              oxyAlert(`Konto "${targetUser}" zostało usunięte z bazy serwera.`, "info", "USUNIĘTO");
+              oxyAlert(`Konto "${targetUser}" zostało usunięte z serwera.`, "info", "USUNIĘTO");
+              await renderUsers();
+              renderQuickLoginList();
             } else {
-              // Fallback lokalny
-              const users = JSON.parse(localStorage.getItem(USERS_KEY) || "[]");
-              const filtered = users.filter((u) => u.user.toLowerCase() !== targetUser.toLowerCase());
-              localStorage.setItem(USERS_KEY, JSON.stringify(filtered));
-              oxyAlert(`Konto "${targetUser}" zostało usunięte lokalnie.`, "info", "USUNIĘTO");
+              oxyAlert(apiRes.data?.message || "Błąd usuwania konta z serwera.", "error", "BŁĄD");
             }
-            await renderUsers();
-            renderQuickLoginList();
           });
         }
       });
     }
 
-    // Dialog zmiany hasła
+    // ZMIANA HASŁA BEZPOŚREDNIO NA SERWERZE
     function openChangePasswordDialog(targetUser) {
       let overlay = document.getElementById("change-pass-overlay");
       if (!overlay) {
@@ -1789,7 +1874,7 @@
         overlay.innerHTML = `
           <div class="shift-modal-content shift-modal-change-pass">
             <div class="shift-modal-header">
-              <h3 class="shift-modal-title"><i class="fas fa-key shift-icon-highlight"></i> Zmiana Hasła</h3>
+              <h3 class="shift-modal-title"><i class="fas fa-key shift-icon-highlight"></i> Zmiana Hasła na Serwerze</h3>
               <div class="chassis-socket"><button id="btn-close-change-pass" class="shift-modal-close">&times;</button></div>
             </div>
             <div class="shift-modal-body change-pass-body">
@@ -1802,7 +1887,7 @@
               </div>
               <div class="change-pass-actions">
                 <div class="btn-bg"><button type="button" id="btn-cancel-pass" class="btn">ANULUJ</button></div>
-                <div class="btn-bg"><button type="button" id="btn-submit-pass" class="btn active">ZAPISZ HASŁO</button></div>
+                <div class="btn-bg"><button type="button" id="btn-submit-pass" class="btn active">ZAPISZ</button></div>
               </div>
             </div>
           </div>
@@ -1834,26 +1919,23 @@
           return;
         }
 
-        // Zapis przez serwer
-        const apiRes = await apiRequest(`/api/users/${encodeURIComponent(targetUser)}/password`, "PUT", { newPassword: p1 });
-        if (apiRes.ok) {
-          oxyAlert(`Potwierdzenie: Nowe hasło dla ${targetUser} zostało zapisane na serwerze!`, "success", "SUKCES");
-        } else {
-          // Zapis lokalny fallback
-          const users = JSON.parse(localStorage.getItem(USERS_KEY) || "[]");
-          const target = users.find((u) => u.user.toLowerCase() === targetUser.toLowerCase());
-          if (target) {
-            target.pass = p1;
-            localStorage.setItem(USERS_KEY, JSON.stringify(users));
+        btnSubmit.innerHTML = '<i class="fas fa-spinner fa-spin"></i> ZAPISYWANIE...';
+        try {
+          const apiRes = await apiRequest(`/api/users/${encodeURIComponent(targetUser)}/password`, "PUT", { newPassword: p1 });
+          if (apiRes.ok && apiRes.data && apiRes.data.success) {
+            oxyAlert(`Nowe hasło dla ${targetUser} zostało zapisane w bazie serwera! Możesz się teraz zalogować.`, "success", "SUKCES SERWERA");
+            overlay.classList.remove("active");
+            audio.playClick("switch");
+          } else {
+            oxyAlert(apiRes.data?.message || "Nie udało się zapisać hasła na serwerze.", "error", "BŁĄD SERWERA");
           }
-          oxyAlert(`Zaktualizowano hasło lokalnie dla "${targetUser}".`, "info", "SUKCES");
+        } finally {
+          btnSubmit.innerHTML = "ZAPISZ NA SERWERZE";
         }
-        overlay.classList.remove("active");
-        audio.playClick("switch");
       };
     }
 
-    // Dodawanie nowego użytkownika
+    // DODAWANIE NOWEGO PROFILU DO SERWERA
     if (btnAdd) {
       btnAdd.addEventListener("click", async () => {
         const uInp = document.getElementById("new-username");
@@ -1866,29 +1948,21 @@
           return;
         }
 
-        // 1. Zapis przez serwer Express
-        const apiRes = await apiRequest("/api/users", "POST", { user: uVal, pass: pVal, role: "custom" });
-        if (apiRes.ok && apiRes.data && apiRes.data.success) {
-          oxyAlert(`Potwierdzenie: Nowe hasło i konto (${uVal}) zostało dodane na serwerze!`, "success", "SUKCES");
-        } else if (apiRes.status === 400) {
-          oxyAlert(apiRes.data?.message || "Użytkownik już istnieje.", "error", "DUPLIKAT");
-          return;
-        } else {
-          // Fallback lokalny
-          const users = JSON.parse(localStorage.getItem(USERS_KEY) || "[]");
-          if (users.find((u) => u.user.toLowerCase() === uVal.toLowerCase())) {
-            oxyAlert("Użytkownik już istnieje w bazie lokalnej.", "error", "DUPLIKAT");
-            return;
+        btnAdd.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        try {
+          const apiRes = await apiRequest("/api/users", "POST", { user: uVal, pass: pVal, role: "custom" });
+          if (apiRes.ok && apiRes.data && apiRes.data.success) {
+            oxyAlert(`Konto (${uVal}) zostało utworzone i zapisane w bazie serwera!`, "success", "SUKCES SERWERA");
+            if (uInp) uInp.value = "";
+            if (pInp) pInp.value = "";
+            await renderUsers();
+            renderQuickLoginList();
+          } else {
+            oxyAlert(apiRes.data?.message || "Błąd zapisu na serwerze.", "error", "BŁĄD SERWERA");
           }
-          users.push({ user: uVal, pass: pVal, role: "custom" });
-          localStorage.setItem(USERS_KEY, JSON.stringify(users));
-          oxyAlert(`Utworzono konto "${uVal}" w trybie lokalnym.`, "success", "NOWY UŻYTKOWNIK");
+        } finally {
+          btnAdd.innerHTML = '<i class="fas fa-plus"></i>';
         }
-
-        if (uInp) uInp.value = "";
-        if (pInp) pInp.value = "";
-        await renderUsers();
-        renderQuickLoginList();
       });
     }
 
@@ -1911,19 +1985,16 @@
   }
 
   // ==========================================
-  // INICJALIZACJA STARTOWA
+  // INICJALIZACJA STARTOWA (BOOT APPLICATION)
   // ==========================================
   function bootApplication() {
-    // 1. Motyw wizualny (zapamiętany w localStorage)
     const savedTheme = localStorage.getItem("oxy_os_theme") || "dark";
     document.documentElement.setAttribute("theme", savedTheme);
 
-    // 2. Sprawdzenie statusu serwera Express i start systemu logowania
     checkServerStatus();
-    setInterval(checkServerStatus, 30000);
+    setInterval(checkServerStatus, 25000);
     initLoginSystem();
 
-    // 3. Wstrzyknięcie ikon SVG
     if (typeof AppIcons !== "undefined") {
       const injectIcon = (id, iconSvg) => {
         const dest = document.getElementById(id);
@@ -1945,7 +2016,6 @@
     startClock();
     renderSchedule();
 
-    // Przycisk "Kto na zmianie" w górnym pasku / dolnym mobilnym menu
     const btnKto = document.getElementById("btn-kto-na-zmianie");
     if (btnKto) {
       btnKto.addEventListener("click", () => {
@@ -1953,7 +2023,6 @@
       });
     }
 
-    // Kliknięcie w kartę "Dniówka (Dziś)" otwiera obsadę dzienną
     const wDay = document.getElementById("widget-day-count")?.closest(".widget-card");
     if (wDay) {
       wDay.style.cursor = "pointer";
@@ -1961,7 +2030,6 @@
       wDay.addEventListener("click", () => openShiftListModal(null, "day"));
     }
 
-    // Kliknięcie w kartę "Nocka (Dziś)" otwiera obsadę nocną
     const wNight = document.getElementById("widget-night-count")?.closest(".widget-card");
     if (wNight) {
       wNight.style.cursor = "pointer";
@@ -1969,7 +2037,6 @@
       wNight.addEventListener("click", () => openShiftListModal(null, "night"));
     }
 
-    // 4. Pobieranie danych z GitHub
     const btnCloud = document.getElementById("btn-cloud-fetch");
     if (btnCloud) {
       btnCloud.addEventListener("click", async () => {
@@ -2004,7 +2071,6 @@
       });
     }
 
-    // 5. Przełączanie motywu (Ciemny / Jasny)
     const themeBtn = document.getElementById("theme-toggle");
     if (themeBtn) {
       themeBtn.addEventListener("click", () => {
@@ -2027,7 +2093,6 @@
       });
     }
 
-    // 6. Instalacja PWA
     let deferredInstallPrompt = null;
     window.addEventListener("beforeinstallprompt", (e) => {
       e.preventDefault();
@@ -2053,7 +2118,6 @@
     }
   }
 
-  // Globalny dostęp do odtwarzacza dźwięków sprzętowych
   window._oxyAudio = audio;
 
   if (document.readyState === "loading") {
@@ -2063,7 +2127,6 @@
   }
 })();
 
-// Dźwięk tactile click dla wszystkich przycisków (optymalizacja bez tworzenia wielu AudioContext)
 document.addEventListener("click", (e) => {
   const btn = e.target.closest("button, .btn, .icon-btn, .month-tab-btn, .option");
   if (btn && !btn.classList.contains("select-trigger")) {

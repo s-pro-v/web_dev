@@ -768,9 +768,9 @@
 
     .users-add-form {
         display: flex;
-            flex-direction: row;
-            gap: 6px;
-            width: 100%;
+        flex-direction: row;
+        gap: 6px;
+        width: 100%;
     }
 
     .users-add-form .input-chassis {
