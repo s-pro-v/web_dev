@@ -1,3 +1,4 @@
+require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const fs = require("fs");
@@ -7,16 +8,22 @@ const jwt = require("jsonwebtoken");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const DB_FILE = path.join(__dirname, "users_db.json");
+
+// Plik bazy użytkowników – przestawiony na main.json
+const DB_FILE = path.join(__dirname, "main.json");
 const GITHUB_JSON_URL = "https://raw.githubusercontent.com/s-pro-v/json-lista/refs/heads/main/mobile-grafik.json";
 
-// Konfiguracja zmiennych środowiskowych (Render / .env)
+// Zmienne środowiskowe (Render / .env)
 const JWT_SECRET = process.env.JWT_SECRET || "oxy_os_tactical_auth_jwt_key_9941_sec";
-const GITHUB_TOKEN = process.env.GITHUB_TOKEN || "";
-const GITHUB_REPO_OWNER = process.env.GITHUB_REPO_OWNER || "s-pro-v";
-const GITHUB_REPO_NAME = process.env.GITHUB_REPO_NAME || "json-lista";
-const GITHUB_FILE_PATH = process.env.GITHUB_FILE_PATH || "users_db.json";
-const GITHUB_BRANCH = process.env.GITHUB_BRANCH || "main";
+const GITHUB_TOKEN = (process.env.GITHUB_TOKEN || "").trim();
+const GITHUB_REPO_OWNER = (process.env.GITHUB_REPO_OWNER || "s-pro-v").trim();
+const GITHUB_REPO_NAME = (process.env.GITHUB_REPO_NAME || "json-lista").trim();
+const GITHUB_FILE_PATH = (process.env.GITHUB_FILE_PATH || "main.json").trim(); // ZAWSZE main.json
+const GITHUB_BRANCH = (process.env.GITHUB_BRANCH || "main").trim();
+
+console.log("[CONFIG] Inicjalizacja serwera OXY_OS...");
+console.log(`[CONFIG] Baza GitHub: ${GITHUB_REPO_OWNER}/${GITHUB_REPO_NAME} -> ${GITHUB_FILE_PATH} (${GITHUB_BRANCH})`);
+console.log(`[CONFIG] GitHub Token: ${GITHUB_TOKEN ? "ZAŁADOWANY (długość: " + GITHUB_TOKEN.length + ")" : "BRAK TOKENA!"}`);
 
 app.use(cors());
 app.use(express.json());
@@ -32,7 +39,7 @@ function isRateLimited(ip) {
         loginAttempts.delete(ip);
         return false;
     }
-    return entry.count >= 10;
+    return entry.count >= 15;
 }
 
 function registerFailedAttempt(ip) {
@@ -50,6 +57,7 @@ function isHash(pass) {
     return typeof pass === "string" && (pass.startsWith("$2a$") || pass.startsWith("$2b$"));
 }
 
+// Odczyt lokalny z pliku main.json
 function loadUsers() {
     let users = [];
     if (!fs.existsSync(DB_FILE)) {
@@ -81,35 +89,40 @@ function loadUsers() {
     return users;
 }
 
+// Zapis lokalny do pliku main.json
 function saveUsers(users) {
     try {
         fs.writeFileSync(DB_FILE, JSON.stringify(users, null, 2), "utf-8");
-        console.log(`[DB] Pomyślnie zaktualizowano lokalny plik ${DB_FILE}`);
+        console.log(`[DB LOCAL] Zapisano ${users.length} kont w pliku ${DB_FILE}`);
         return true;
     } catch (e) {
-        console.error(`[DB ERROR] Błąd zapisu do pliku:`, e);
+        console.error(`[DB LOCAL ERROR] Błąd zapisu do pliku:`, e);
         return false;
     }
 }
 
 // ========================================================
-// INTEGRACJA Z GITHUB REST API (COMMIT NA BAZIE TOKENA)
+// POBIERANIE PLIKU main.json I JEGO SHA Z GITHUB
 // ========================================================
 async function fetchUsersFromGitHub() {
-    if (!GITHUB_TOKEN) return null;
+    if (!GITHUB_TOKEN) {
+        console.warn("[GITHUB API] Pominięto fetch: brak GITHUB_TOKEN");
+        return null;
+    }
 
+    const url = `https://api.github.com/repos/${GITHUB_REPO_OWNER}/${GITHUB_REPO_NAME}/contents/${GITHUB_FILE_PATH}?ref=${GITHUB_BRANCH}`;
     try {
-        const url = `https://api.github.com/repos/${GITHUB_REPO_OWNER}/${GITHUB_REPO_NAME}/contents/${GITHUB_FILE_PATH}?ref=${GITHUB_BRANCH}`;
         const res = await fetch(url, {
             headers: {
-                "Authorization": `Bearer ${GITHUB_TOKEN}`,
+                "Authorization": `token ${GITHUB_TOKEN}`,
                 "Accept": "application/vnd.github.v3+json",
-                "User-Agent": "OXY_OS-Auth-Server"
+                "User-Agent": "OXY-OS-Server"
             }
         });
 
         if (!res.ok) {
-            console.warn(`[GITHUB WARN] Status pobierania pliku: ${res.status}`);
+            const errText = await res.text();
+            console.error(`[GITHUB FETCH ERROR] Status ${res.status}:`, errText);
             return null;
         }
 
@@ -120,53 +133,61 @@ async function fetchUsersFromGitHub() {
             users: JSON.parse(content)
         };
     } catch (err) {
-        console.error(`[GITHUB FETCH ERROR]`, err.message);
+        console.error(`[GITHUB FETCH EXCEPTION]`, err.message);
         return null;
     }
 }
 
-async function commitUsersToGitHub(usersList, commitMessage = "chore(auth): update users_db.json") {
+// ========================================================
+// COMMIT DO main.json W GITHUB PRZEZ REST API
+// ========================================================
+async function commitUsersToGitHub(usersList, commitMessage) {
     if (!GITHUB_TOKEN) {
-        console.warn("[GITHUB] Brak GITHUB_TOKEN w zmiennych środowiskowych. Pominięto commit do repozytorium.");
-        return false;
+        console.error("[GITHUB COMMIT ERROR] Brak zmiennej GITHUB_TOKEN w serwerze!");
+        return { ok: false, error: "Brak GITHUB_TOKEN na serwerze" };
     }
 
     try {
-        const currentFile = await fetchUsersFromGitHub();
-        const sha = currentFile ? currentFile.sha : undefined;
+        const currentData = await fetchUsersFromGitHub();
+        const sha = currentData ? currentData.sha : null;
 
         const url = `https://api.github.com/repos/${GITHUB_REPO_OWNER}/${GITHUB_REPO_NAME}/contents/${GITHUB_FILE_PATH}`;
         const contentBase64 = Buffer.from(JSON.stringify(usersList, null, 2), "utf-8").toString("base64");
 
         const bodyPayload = {
-            message: commitMessage,
+            message: commitMessage || `chore(auth): aktualizacja ${GITHUB_FILE_PATH}`,
             content: contentBase64,
             branch: GITHUB_BRANCH
         };
-        if (sha) bodyPayload.sha = sha;
+        if (sha) {
+            bodyPayload.sha = sha;
+        }
 
-        const putRes = await fetch(url, {
+        console.log(`[GITHUB COMMIT] Wysyłanie commita do ${url} (sha: ${sha || "nowy plik"})...`);
+
+        const res = await fetch(url, {
             method: "PUT",
             headers: {
-                "Authorization": `Bearer ${GITHUB_TOKEN}`,
+                "Authorization": `token ${GITHUB_TOKEN}`,
                 "Accept": "application/vnd.github.v3+json",
                 "Content-Type": "application/json",
-                "User-Agent": "OXY_OS-Auth-Server"
+                "User-Agent": "OXY-OS-Server"
             },
             body: JSON.stringify(bodyPayload)
         });
 
-        if (!putRes.ok) {
-            const errData = await putRes.json();
-            console.error("[GITHUB COMMIT ERROR]", errData);
-            return false;
+        const resData = await res.json().catch(() => ({}));
+
+        if (!res.ok) {
+            console.error("[GITHUB COMMIT FAILED] Błąd z GitHub API:", res.status, resData);
+            return { ok: false, status: res.status, error: resData.message || "Błąd GitHub API" };
         }
 
-        console.log(`[GITHUB SUCCESS] Zacommitowano zmiany do repozytorium: ${GITHUB_REPO_OWNER}/${GITHUB_REPO_NAME} (${GITHUB_BRANCH})`);
-        return true;
+        console.log(`[GITHUB COMMIT SUCCESS] Pomyślnie zacommitowano do pliku ${GITHUB_FILE_PATH} na gałęzi ${GITHUB_BRANCH}!`);
+        return { ok: true, data: resData };
     } catch (err) {
-        console.error("[GITHUB ERROR]", err.message);
-        return false;
+        console.error("[GITHUB COMMIT EXCEPTION]", err);
+        return { ok: false, error: err.message };
     }
 }
 
@@ -176,14 +197,14 @@ async function commitUsersToGitHub(usersList, commitMessage = "chore(auth): upda
 function verifyToken(req, res, next) {
     const authHeader = req.headers["authorization"];
     if (!authHeader) {
-        return res.status(401).json({ success: false, message: "Wymagana autoryzacja: brak tokena." });
+        return res.status(401).json({ success: false, message: "Brak autoryzacji: żądanie nie posiada tokena." });
     }
 
     const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : authHeader;
 
     jwt.verify(token, JWT_SECRET, (err, decoded) => {
         if (err) {
-            return res.status(403).json({ success: false, message: "Sesja wygasła lub nieprawidłowy token. Zaloguj się ponownie." });
+            return res.status(403).json({ success: false, message: "Sesja wygasła. Zaloguj się ponownie." });
         }
         req.user = decoded;
         next();
@@ -191,7 +212,7 @@ function verifyToken(req, res, next) {
 }
 
 // ========================================================
-// 1. ENDPOINT LOGOWANIA (GENERUJE JWT TOKEN)
+// ENDPOINT: Logowanie
 // ========================================================
 app.post("/api/login", (req, res) => {
     const clientIp = req.headers["x-forwarded-for"] || req.socket.remoteAddress;
@@ -199,7 +220,7 @@ app.post("/api/login", (req, res) => {
     if (isRateLimited(clientIp)) {
         return res.status(429).json({
             success: false,
-            message: "Zbyt wiele nieudanych prób logowania. Odczekaj 60 sekund."
+            message: "Zbyt wiele prób. Odczekaj minutę."
         });
     }
 
@@ -210,7 +231,7 @@ app.post("/api/login", (req, res) => {
     const rawPass = String(password || "").trim();
 
     if (!rawPass && !rawLogin) {
-        return res.status(400).json({ success: false, message: "Wprowadź login oraz hasło." });
+        return res.status(400).json({ success: false, message: "Wprowadź login i hasło." });
     }
 
     let matchedUser = null;
@@ -266,7 +287,7 @@ app.post("/api/login", (req, res) => {
 });
 
 // ========================================================
-// 2. ENDPOINT POBIERANIA LISTY PROFILI
+// ENDPOINT: Pobieranie listy kont
 // ========================================================
 app.get("/api/users", (req, res) => {
     const users = loadUsers();
@@ -280,7 +301,7 @@ app.get("/api/users", (req, res) => {
 });
 
 // ========================================================
-// 3. ENDPOINT ZMIANY HASŁA (TOKEN + DYSK + COMMIT GITHUB)
+// ENDPOINT: Zmiana hasła (Zapis w main.json + Commit do GitHub)
 // ========================================================
 app.put("/api/users/:username/password", verifyToken, async (req, res) => {
     try {
@@ -288,11 +309,13 @@ app.put("/api/users/:username/password", verifyToken, async (req, res) => {
         const decodedUser = decodeURIComponent(rawParam).trim().toLowerCase();
         const newPassword = req.body.newPassword || req.body.password || req.body.pass;
 
+        console.log(`[REQ PASSWORD CHANGE] Cel: "${decodedUser}", Zmieniający: "${req.user.username}"`);
+
         const isSelf = req.user.username.trim().toLowerCase() === decodedUser;
         const isAdmin = req.user.role === "admin" || req.user.username.toLowerCase() === "admin";
 
         if (!isSelf && !isAdmin) {
-            return res.status(403).json({ success: false, message: "Brak uprawnień do zmiany hasła innego użytkownika." });
+            return res.status(403).json({ success: false, message: "Brak uprawnień do zmiany hasła innego konta." });
         }
 
         if (!newPassword || typeof newPassword !== "string" || newPassword.trim().length < 3) {
@@ -303,23 +326,17 @@ app.put("/api/users/:username/password", verifyToken, async (req, res) => {
         let userObj = users.find(u => (u.user || "").trim().toLowerCase() === decodedUser);
 
         if (!userObj) {
-            const ghData = await fetchUsersFromGitHub();
-            if (ghData && Array.isArray(ghData.users)) {
-                users = ghData.users;
-                userObj = users.find(u => (u.user || "").trim().toLowerCase() === decodedUser);
-            }
+            return res.status(404).json({ success: false, message: `Nie znaleziono profilu "${decodedUser}" w pliku ${path.basename(DB_FILE)}.` });
         }
 
-        if (!userObj) {
-            return res.status(404).json({ success: false, message: `Nie znaleziono profilu "${decodedUser}" w bazie danych.` });
-        }
-
+        // 1. Zmiana hasła i haszowanie
         userObj.pass = bcrypt.hashSync(newPassword.trim(), 10);
         saveUsers(users);
 
-        let githubCommitted = false;
+        // 2. Commit do GitHuba do pliku main.json
+        let ghResult = { ok: false };
         if (GITHUB_TOKEN) {
-            githubCommitted = await commitUsersToGitHub(
+            ghResult = await commitUsersToGitHub(
                 users,
                 `sec(auth): zmiana hasła dla użytkownika ${userObj.user}`
             );
@@ -328,71 +345,21 @@ app.put("/api/users/:username/password", verifyToken, async (req, res) => {
         return res.json({
             success: true,
             user: userObj.user,
-            githubSynced: githubCommitted,
+            githubSynced: ghResult.ok,
+            githubError: ghResult.ok ? null : ghResult.error,
             updatedFile: path.basename(DB_FILE),
-            message: githubCommitted
-                ? `Hasło dla "${userObj.user}" zostało zapisane na serwerze i zacommitowane do GitHub!`
-                : `Hasło dla "${userObj.user}" zostało zapisane w lokalnej bazie serwera.`
+            message: ghResult.ok
+                ? `Hasło dla "${userObj.user}" zostało zapisane i zacommitowane do ${path.basename(DB_FILE)} na GitHub!`
+                : `Hasło zapisano lokalnie, ale commit na GitHub do ${path.basename(DB_FILE)} się nie powiódł: ${ghResult.error || "Brak GITHUB_TOKEN"}`
         });
     } catch (err) {
+        console.error("[PUT PASSWORD EXCEPTION]", err);
         return res.status(500).json({ success: false, message: "Błąd serwera: " + err.message });
     }
 });
 
 // ========================================================
-// 4. ENDPOINT DODAWANIA UŻYTKOWNIKA (TOKEN + COMMIT GITHUB)
-// ========================================================
-app.post("/api/users", verifyToken, async (req, res) => {
-    const isAdmin = req.user.role === "admin" || req.user.username.toLowerCase() === "admin";
-    if (!isAdmin) {
-        return res.status(403).json({ success: false, message: "Tylko administrator może tworzyć nowe konta." });
-    }
-
-    const user = req.body.user || req.body.username;
-    const pass = req.body.pass || req.body.password;
-    const role = req.body.role || "custom";
-
-    if (!user || !pass) {
-        return res.status(400).json({ success: false, message: "Wymagany login i hasło." });
-    }
-
-    const users = loadUsers();
-    const cleanUser = String(user).trim().replace(/\s+/g, "_");
-    const cleanPass = String(pass).trim();
-
-    if (users.some(u => (u.user || "").toLowerCase() === cleanUser.toLowerCase())) {
-        return res.status(400).json({ success: false, message: "Użytkownik o tym loginie już istnieje na serwerze." });
-    }
-
-    const newUser = {
-        user: cleanUser,
-        pass: bcrypt.hashSync(cleanPass, 10),
-        role: role,
-        workerId: null
-    };
-
-    users.push(newUser);
-    saveUsers(users);
-
-    let githubCommitted = false;
-    if (GITHUB_TOKEN) {
-        githubCommitted = await commitUsersToGitHub(
-            users,
-            `feat(auth): dodano konto ${newUser.user}`
-        );
-    }
-
-    res.json({
-        success: true,
-        githubSynced: githubCommitted,
-        updatedFile: path.basename(DB_FILE),
-        message: `Konto ${newUser.user} zostało dodane i zapisane.`,
-        user: { user: newUser.user, role: newUser.role, workerId: newUser.workerId }
-    });
-});
-
-// ========================================================
-// 5. STATUS SERWERA
+// ENDPOINT: Status serwera i konfiguracji GitHub
 // ========================================================
 app.get("/api/status", (req, res) => {
     const { user } = req.query;
@@ -404,102 +371,29 @@ app.get("/api/status", (req, res) => {
     res.json({
         success: true,
         status: "ONLINE",
-        version: "2.3.0 (Token + GitHub Auth)",
+        version: "2.5.0 (main.json Sync)",
+        databaseFile: path.basename(DB_FILE),
         usersCount: users.length,
         githubConfigured: Boolean(GITHUB_TOKEN),
+        githubRepo: `${GITHUB_REPO_OWNER}/${GITHUB_REPO_NAME}`,
         serverTime: new Date().toISOString(),
         uptime: Math.floor(process.uptime())
     });
 });
 
-// ========================================================
-// 6. USUWANIE KONTA (TOKEN + COMMIT GITHUB)
-// ========================================================
-app.delete("/api/users/:username", verifyToken, async (req, res) => {
-    const isAdmin = req.user.role === "admin" || req.user.username.toLowerCase() === "admin";
-    if (!isAdmin) {
-        return res.status(403).json({ success: false, message: "Tylko administrator może usuwać konta." });
-    }
-
-    const { username } = req.params;
-    const cleanUser = decodeURIComponent(username).trim().toLowerCase();
-    let users = loadUsers();
-
-    if (cleanUser === "admin" || cleanUser === "robert_s") {
-        return res.status(403).json({ success: false, message: "Konta głównego administratora nie można usunąć." });
-    }
-
-    const prevLen = users.length;
-    users = users.filter(u => (u.user || "").trim().toLowerCase() !== cleanUser);
-
-    if (users.length === prevLen) {
-        return res.status(404).json({ success: false, message: "Nie znaleziono użytkownika na serwerze." });
-    }
-
-    saveUsers(users);
-
-    let githubCommitted = false;
+// Inicjalizacja: Pobranie świeżego main.json z GitHuba przy starcie
+async function initServerDatabase() {
     if (GITHUB_TOKEN) {
-        githubCommitted = await commitUsersToGitHub(
-            users,
-            `chore(auth): usunięto konto ${username}`
-        );
-    }
-
-    res.json({
-        success: true,
-        githubSynced: githubCommitted,
-        message: `Konto ${username} usunięte z bazy serwera.`
-    });
-});
-
-// ========================================================
-// 7. SYNCHRONIZACJA Z GRAFIKIEM GITHUB
-// ========================================================
-app.post("/api/sync-github", async (req, res) => {
-    try {
-        const fetchRes = await fetch(`${GITHUB_JSON_URL}?_t=${Date.now()}`);
-        if (!fetchRes.ok) throw new Error("Błąd pobierania bazy grafiku z GitHub");
-        const monthsData = await fetchRes.json();
-
-        const users = loadUsers();
-        let addedCount = 0;
-
-        monthsData.forEach(m => {
-            if (!m.workers || !Array.isArray(m.workers)) return;
-            m.workers.forEach((w, idx) => {
-                if (!w.name || w.name.trim() === "" || w.name === "Przykładowy Pracownik") return;
-
-                const userName = w.name.trim().replace(/\s+/g, "_");
-                const exists = users.find(u => (u.user || "").toLowerCase() === userName.toLowerCase());
-
-                if (!exists) {
-                    const firstName = w.name.trim().split(" ")[0];
-                    const plainPass = `${firstName}${w.id != null ? w.id : (idx + 1)}`;
-                    users.push({
-                        user: userName,
-                        pass: bcrypt.hashSync(plainPass, 10),
-                        role: "worker",
-                        workerId: w.id || null
-                    });
-                    addedCount++;
-                } else if (w.id != null && exists.workerId == null) {
-                    exists.workerId = w.id;
-                }
-            });
-        });
-
-        saveUsers(users);
-
-        if (addedCount > 0 && GITHUB_TOKEN) {
-            await commitUsersToGitHub(users, `chore(auth): synchronizacja kont z grafiku (${addedCount} nowych)`);
+        console.log(`[INIT] Synchronizacja pliku ${GITHUB_FILE_PATH} z GitHuba...`);
+        const ghData = await fetchUsersFromGitHub();
+        if (ghData && Array.isArray(ghData.users)) {
+            saveUsers(ghData.users);
+            console.log(`[INIT] Załadowano ${ghData.users.length} kont z pliku ${GITHUB_FILE_PATH} na GitHubie.`);
+        } else {
+            console.warn(`[INIT] Nie udało się pobrać ${GITHUB_FILE_PATH} z GitHuba, używam lokalnego pliku.`);
         }
-
-        res.json({ success: true, addedCount, updatedFile: path.basename(DB_FILE) });
-    } catch (err) {
-        res.status(500).json({ success: false, message: err.message });
     }
-});
+}
 
 app.use(express.static(path.join(__dirname, ".")));
 
@@ -507,6 +401,7 @@ app.get("*", (req, res) => {
     res.sendFile(path.join(__dirname, "index.html"));
 });
 
-app.listen(PORT, () => {
-    console.log(`[OXY_OS] Serwer autoryzacji z Tokenem JWT i GitHub Commit działa na porcie ${PORT}`);
+app.listen(PORT, async () => {
+    console.log(`[OXY_OS] Serwer działa na porcie ${PORT}`);
+    await initServerDatabase();
 });
