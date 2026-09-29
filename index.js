@@ -58,9 +58,7 @@
           osc.start(now);
           osc.stop(now + 0.015);
         }
-      } catch (e) {
-        // Ignoruj błędy autoodtwarzania
-      }
+      } catch (e) { }
     }
   }
 
@@ -321,9 +319,6 @@
     appState.activeMonthIdx = findCurrentMonthIndex();
   }
 
-  // ==========================================
-  // ZAKŁADKI, EDYTOR I CZAS
-  // ==========================================
   function initTabsAndEditor() {
     ["dashboard", "schedule", "code"].forEach((tab) => {
       const btn = document.getElementById(`btn-view-${tab}`);
@@ -368,9 +363,6 @@
     }, 1000);
   }
 
-  // ==========================================
-  // RENDEROWANIE TABELI GRAFIKU
-  // ==========================================
   function renderSchedule() {
     const container = document.getElementById("schedule-content");
     if (!container || appState.allMonths.length === 0) return;
@@ -486,9 +478,6 @@
     syncDashboardCharts();
   }
 
-  // ==========================================
-  // KALENDARZ PRACOWNIKA & OBSADA ZMIAN
-  // ==========================================
   function createWorkerCalendarModal() {
     if (document.getElementById("worker-cal-overlay")) return;
     const modal = document.createElement("div");
@@ -1143,7 +1132,7 @@
           </div>
           <div class="extracted-style-39">
             <div class="extracted-style-40">Autoryzacja Serwera</div>
-            <div class="extracted-style-41">${serverOnline ? "ONLINE (Bcrypt Express :3000)" : "OFFLINE (Brak połączenia)"}</div>
+            <div class="extracted-style-41">${serverOnline ? "ONLINE (JWT + GitHub API)" : "OFFLINE (Brak połączenia)"}</div>
           </div>
         </div>
         <div class="transaction-item extracted-style-37">
@@ -1169,7 +1158,7 @@
   }
 
   // ==========================================
-  // KOMUNIKACJA Z BACKENDEM EXPRESS & RENDER.COM
+  // KOMUNIKACJA Z BACKENDEM EXPRESS Z TOKENEM
   // ==========================================
   function getApiBase() {
     const custom = localStorage.getItem("oxy_render_url");
@@ -1192,10 +1181,13 @@
 
   async function apiRequest(endpoint, method = "GET", body = null) {
     try {
-      const opts = {
-        method,
-        headers: { "Content-Type": "application/json" }
-      };
+      const headers = { "Content-Type": "application/json" };
+      const token = localStorage.getItem("oxy_os_token");
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+
+      const opts = { method, headers };
       if (body) opts.body = JSON.stringify(body);
       const apiBase = getApiBase();
       const res = await fetch(`${apiBase}${endpoint}`, opts);
@@ -1329,10 +1321,11 @@
   }
 
   // ==========================================
-  // ZARZĄDZANIE UŻYTKOWNIKAMI & LOGOWANIE (SERVER-ONLY)
+  // ZARZĄDZANIE UŻYTKOWNIKAMI & TOKEN AUTH
   // ==========================================
   function initLoginSystem() {
     const SESSION_KEY = "oxy_os_user";
+    const TOKEN_KEY = "oxy_os_token";
     const SAVED_PROFILES_KEY = "oxy_os_saved_profiles";
 
     const loginOverlay = document.getElementById("login-overlay");
@@ -1433,7 +1426,9 @@
     }
 
     const savedSession = localStorage.getItem(SESSION_KEY);
-    if (savedSession) {
+    const savedToken = localStorage.getItem(TOKEN_KEY);
+
+    if (savedSession && savedToken) {
       try {
         const sessionObj = JSON.parse(savedSession);
         unlockUi(sessionObj);
@@ -1446,7 +1441,6 @@
       renderQuickLoginList();
     }
 
-    // Pobieranie listy kont z serwera
     async function renderQuickLoginList() {
       if (!quickListEl) return;
 
@@ -1621,7 +1615,6 @@
       quickListEl.appendChild(gridEl);
     }
 
-    // GŁÓWNA WERYFIKACJA LOGOWANIA WYSYŁANA DO SERWERA
     async function performLogin(username, password) {
       const userVal = String(username || "").trim();
       const passVal = String(password || "").trim();
@@ -1641,20 +1634,24 @@
         if (apiRes.ok && apiRes.data && apiRes.data.success) {
           serverOnline = true;
           const userObj = apiRes.data.user;
+          const token = apiRes.data.token;
+
+          localStorage.setItem(TOKEN_KEY, token);
+          localStorage.setItem(SESSION_KEY, JSON.stringify(userObj));
+
           const rememberCheck = document.getElementById("login-remember-me");
           if (!rememberCheck || rememberCheck.checked) {
             saveProfileToRemembered(userObj);
           }
-          localStorage.setItem(SESSION_KEY, JSON.stringify(userObj));
 
           unlockUi(userObj);
           audio.playClick("switch");
-          oxyAlert(`Zalogowano jako: <strong>${userObj.username}</strong> (${userObj.role.toUpperCase()})`, "success", "AUTORYZACJA SERWERA");
+          oxyAlert(`Zalogowano jako: <strong>${userObj.username}</strong> (${userObj.role.toUpperCase()}) [Token aktywny]`, "success", "AUTORYZACJA SERWERA");
           return true;
         }
 
         const errText = apiRes.data?.message || (apiRes.status === 0
-          ? "Brak połączenia z serwerem. Upewnij się, że backend jest uruchomiony."
+          ? "Brak połączenia z serwerem. Upewnij się, że backend jest wybudzony."
           : "Odmowa dostępu: nieprawidłowe hasło lub login.");
 
         if (errorMsg) {
@@ -1686,6 +1683,7 @@
       btnLogout.addEventListener("click", () => {
         oxyConfirm("Czy na pewno chcesz zakończyć sesję OXY_OS?", () => {
           localStorage.removeItem(SESSION_KEY);
+          localStorage.removeItem(TOKEN_KEY);
           window.location.reload();
         });
       });
@@ -1851,7 +1849,7 @@
             return;
           }
 
-          oxyConfirm(`Czy na pewno trwale usunąć profil "${targetUser}" z serwera?`, async () => {
+          oxyConfirm(`Czy na pewno trwale usunąć profil "${targetUser}" z bazy serwera?`, async () => {
             const apiRes = await apiRequest(`/api/users/${encodeURIComponent(targetUser)}`, "DELETE");
             if (apiRes.ok) {
               oxyAlert(`Konto "${targetUser}" zostało usunięte z bazy serwera.`, "info", "USUNIĘTO");
@@ -1865,7 +1863,6 @@
       });
     }
 
-    // ZMIANA HASŁA BEZPOŚREDNIO NA SERWERZE Z POTWIERDZENIEM
     function openChangePasswordDialog(targetUser) {
       let overlay = document.getElementById("change-pass-overlay");
       if (!overlay) {
@@ -1875,7 +1872,7 @@
         overlay.innerHTML = `
           <div class="shift-modal-content shift-modal-change-pass">
             <div class="shift-modal-header">
-              <h3 class="shift-modal-title"><i class="fas fa-key shift-icon-highlight"></i> Zmiana Hasła na Serwerze</h3>
+              <h3 class="shift-modal-title"><i class="fas fa-key shift-icon-highlight"></i> Zmiana Hasła (Token Secure)</h3>
               <div class="chassis-socket"><button id="btn-close-change-pass" class="shift-modal-close">&times;</button></div>
             </div>
             <div class="shift-modal-body change-pass-body">
@@ -1888,7 +1885,7 @@
               </div>
               <div class="change-pass-actions">
                 <div class="btn-bg"><button type="button" id="btn-cancel-pass" class="btn">ANULUJ</button></div>
-                <div class="btn-bg"><button type="button" id="btn-submit-pass" class="btn active">ZAPISZ NA SERWERZE</button></div>
+                <div class="btn-bg"><button type="button" id="btn-submit-pass" class="btn active">ZAPISZ POD TOKEN</button></div>
               </div>
             </div>
           </div>
@@ -1920,28 +1917,33 @@
           return;
         }
 
-        btnSubmit.innerHTML = '<i class="fas fa-spinner fa-spin"></i> ZAPISYWANIE...';
+        btnSubmit.innerHTML = '<i class="fas fa-spinner fa-spin"></i> ZAPISYWANIE POD TOKEN...';
+        btnSubmit.disabled = true;
+
         try {
           const apiRes = await apiRequest(`/api/users/${encodeURIComponent(targetUser)}/password`, "PUT", { newPassword: p1 });
+
           if (apiRes.ok && apiRes.data && apiRes.data.success) {
             const fileName = apiRes.data.updatedFile || "users_db.json";
+            const ghNote = apiRes.data.githubSynced ? " i zacommitowane do GitHub" : "";
             oxyAlert(
-              `POTWIERDZENIE: Nowe hasło dla <strong>${targetUser}</strong> zostało zapisane, a plik <code>${fileName}</code> zaktualizowany na serwerze!`,
+              `POTWIERDZENIE: Nowe hasło dla <strong>${targetUser}</strong> zostało zapisane na serwerze w pliku <code>${fileName}</code>${ghNote}!`,
               "success",
-              "ZAPIS ZAKOŃCZONY"
+              "SUKCES BAZY"
             );
             overlay.classList.remove("active");
             audio.playClick("switch");
           } else {
-            oxyAlert(apiRes.data?.message || "Nie udało się zapisać hasła na serwerze.", "error", "BŁĄD SERWERA");
+            const msg = apiRes.data?.message || (apiRes.status === 403 ? "Brak uprawnień tokena lub sesja wygasła." : "Błąd serwera.");
+            oxyAlert(msg, "error", "BŁĄD SERWERA");
           }
         } finally {
-          btnSubmit.innerHTML = "ZAPISZ NA SERWERZE";
+          btnSubmit.innerHTML = "ZAPISZ POD TOKEN";
+          btnSubmit.disabled = false;
         }
       };
     }
 
-    // DODAWANIE NOWEGO PROFILU DO SERWERA Z POTWIERDZENIEM
     if (btnAdd) {
       btnAdd.addEventListener("click", async () => {
         const uInp = document.getElementById("new-username");
