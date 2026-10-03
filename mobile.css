@@ -8,7 +8,7 @@
    ========================================================================== */
 
 /* Ukrycie pionowego paska przewijania na urządzeniach mobilnych */
-*,
+
 html,
 body,
 .dashboard-wrapper,
@@ -21,7 +21,7 @@ body,
 }
 
 /* Chrome, Safari, WebView na telefonach */
-*,
+
 html::-webkit-scrollbar,
 body::-webkit-scrollbar,
 .dashboard-wrapper::-webkit-scrollbar,
