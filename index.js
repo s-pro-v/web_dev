@@ -319,20 +319,32 @@
     appState.activeMonthIdx = findCurrentMonthIndex();
   }
 
+  function switchView(tab, dayIdx = null, filter = null) {
+    document.querySelectorAll(".view-container").forEach((el) => el.classList.remove("active"));
+    document.querySelectorAll(".dashboard-header .btn-group .btn").forEach((el) => el.classList.remove("active"));
+
+    const btn = document.getElementById(`btn-view-${tab}`) || (tab === "shifts" ? document.getElementById("btn-kto-na-zmianie") : null);
+    if (btn) btn.classList.add("active");
+
+    const viewEl = document.getElementById(`view-${tab}`);
+    if (viewEl) viewEl.classList.add("active");
+
+    if (tab === "schedule") renderSchedule();
+    if (tab === "dashboard") syncDashboardCharts();
+    if (tab === "shifts") {
+      if (typeof dayIdx === "number") activeShiftDayIdx = dayIdx;
+      if (filter) setShiftFilter(filter);
+      renderShiftsView();
+    }
+  }
+
   function initTabsAndEditor() {
-    ["dashboard", "schedule", "code"].forEach((tab) => {
-      const btn = document.getElementById(`btn-view-${tab}`);
+    ["dashboard", "shifts", "schedule", "code"].forEach((tab) => {
+      const btn = document.getElementById(`btn-view-${tab}`) || (tab === "shifts" ? document.getElementById("btn-kto-na-zmianie") : null);
       if (btn) {
         btn.addEventListener("click", () => {
-          document.querySelectorAll(".view-container").forEach((el) => el.classList.remove("active"));
-          document.querySelectorAll(".btn-group .btn").forEach((el) => el.classList.remove("active"));
-
-          const viewEl = document.getElementById(`view-${tab}`);
-          if (viewEl) viewEl.classList.add("active");
-          btn.classList.add("active");
-
-          if (tab === "schedule") renderSchedule();
-          if (tab === "dashboard") syncDashboardCharts();
+          audio.playClick("switch");
+          switchView(tab);
         });
       }
     });
@@ -390,10 +402,26 @@
                   <th class="sticky-col">ID</th>
                   <th class="sticky-col-2">Pracownik</th>`;
 
+    const isCurrentMonthForSchedule = (function () {
+      if (!currentData || !currentData.meta || !currentData.meta.month) {
+        return appState.activeMonthIdx === findCurrentMonthIndex();
+      }
+      const polishMonths = ["STYCZEN", "LUTY", "MARZEC", "KWIECIEN", "MAJ", "CZERWIEC", "LIPIEC", "SIERPIEN", "WRZESIEN", "PAZDZIERNIK", "LISTOPAD", "GRUDZIEN"];
+      const currentMonthName = polishMonths[new Date().getMonth()];
+      const normalized = currentData.meta.month.toUpperCase().replace(/[ĄĆĘŁŃÓŚŹŻ]/g, (c) => ({ Ą: "A", Ć: "C", Ę: "E", Ł: "L", Ń: "N", Ó: "O", Ś: "S", Ź: "Z", Ż: "Z" }[c] || c));
+      return normalized.includes(currentMonthName);
+    })();
+    const todayDateNum = new Date().getDate();
+
     days.forEach((d, i) => {
       const wd = weekdays[i] || "";
       const isWeekend = wd === "SO" || wd === "ND";
-      html += `<th class="top-header bottom-header day-col-header" data-d="${i}" title="Kliknij, aby sprawdzić kto ma zmianę w dniu ${d}" style="cursor: pointer; ${isWeekend ? "color:red;" : ""}">
+      const isToday = isCurrentMonthForSchedule && (parseInt(d, 10) === todayDateNum || String(d) === String(todayDateNum));
+      let headerStyle = isWeekend ? "color:red;" : "";
+      if (isToday) {
+        headerStyle += "background: rgba(243, 108, 0, 0.15); box-shadow: inset 0 -2px 0 var(--highlight-color);";
+      }
+      html += `<th class="top-header bottom-header day-col-header ${isToday ? "today-header" : ""}" data-d="${i}" title="Kliknij, aby sprawdzić kto ma zmianę w dniu ${d}" style="cursor: pointer; ${headerStyle}">
                  ${d}<br><small class="extracted-style-10">${wd}</small>
                </th>`;
     });
@@ -438,6 +466,7 @@
       btn.addEventListener("click", (e) => {
         appState.activeMonthIdx = parseInt(e.target.dataset.idx, 10);
         renderSchedule();
+        renderShiftsView();
       });
     });
 
@@ -465,6 +494,7 @@
         if (ed) ed.value = appState.content;
 
         renderSchedule();
+        renderShiftsView();
       });
     });
 
@@ -522,16 +552,29 @@
 
     let gridHtml = `<div class="cal-grid extracted-style-17">`;
     ["PN", "WT", "ŚR", "CZ", "PT", "SO", "ND"].forEach((day) => {
-      gridHtml += `<div class="cal-header">${day}</div>`;
+      const isWeekend = day === "SO" || day === "ND";
+      gridHtml += `<div class="cal-header ${isWeekend ? "weekend" : ""}">${day}</div>`;
     });
 
     for (let i = 0; i < firstDayOffset; i++) gridHtml += `<div class="cal-cell empty"></div>`;
+
+    const isCurrentMonth = (function () {
+      if (!currentData || !currentData.meta || !currentData.meta.month) {
+        return appState.activeMonthIdx === findCurrentMonthIndex();
+      }
+      const polishMonths = ["STYCZEN", "LUTY", "MARZEC", "KWIECIEN", "MAJ", "CZERWIEC", "LIPIEC", "SIERPIEN", "WRZESIEN", "PAZDZIERNIK", "LISTOPAD", "GRUDZIEN"];
+      const currentMonthName = polishMonths[new Date().getMonth()];
+      const normalized = currentData.meta.month.toUpperCase().replace(/[ĄĆĘŁŃÓŚŹŻ]/g, (c) => ({ Ą: "A", Ć: "C", Ę: "E", Ł: "L", Ń: "N", Ó: "O", Ś: "S", Ź: "Z", Ż: "Z" }[c] || c));
+      return normalized.includes(currentMonthName);
+    })();
+    const todayNum = new Date().getDate();
 
     daysArr.forEach((dayNum, idx) => {
       const shift = getDisplayShiftCode(w.shifts[idx]);
       let shiftHtml = "";
       const isWeekend = weekdaysArr[idx] === "SO" || weekdaysArr[idx] === "ND";
-      let cellClass = `cal-cell ${isWeekend ? "weekend" : ""}`;
+      const isToday = isCurrentMonth && (parseInt(dayNum, 10) === todayNum || String(dayNum) === String(todayNum));
+      let cellClass = `cal-cell ${isWeekend ? "weekend" : ""} ${isToday ? "today" : ""}`.trim();
 
       if (shift === "1") {
         shiftHtml = `<div class="cal-shift day-shift">Dniówka</div>`;
@@ -551,7 +594,7 @@
         freeDays++;
       }
 
-      gridHtml += `<div class="${cellClass}"><div class="cal-day-num">${dayNum}</div>${shiftHtml}</div>`;
+      gridHtml += `<div class="${cellClass}"><div class="cal-day-num ${isWeekend ? "weekend" : ""} ${isToday ? "today" : ""}">${dayNum}</div>${shiftHtml}</div>`;
     });
 
     const totalCells = firstDayOffset + daysArr.length;
@@ -574,116 +617,207 @@
     document.getElementById("worker-cal-overlay").classList.add("active");
   }
 
+  let activeShiftDayIdx = 0;
   let activeShiftModalDayIdx = 0;
   let activeShiftFilter = "all";
   let activeShiftSearch = "";
+  let shiftsViewInitialized = false;
 
-  function createShiftListModal() {
-    if (document.getElementById("shift-modal-overlay")) return;
-    const modal = document.createElement("div");
-    modal.id = "shift-modal-overlay";
-    modal.className = "shift-modal-overlay";
-    modal.innerHTML = `
-      <div class="shift-modal-content extracted-style-18">
-        <div class="shift-modal-header extracted-style-19">
-          <div class="extracted-style-20">
-            <h3 class="shift-modal-title" id="shift-modal-title" class="extracted-style-21">
-              <i class="fas fa-users-viewfinder extracted-style-22"></i> Obsada
-            </h3>
-          </div>
-          <div class="modal-day-controls extracted-style-23">
-            <button id="shift-modal-prev-day" class="btn modal-nav-btn" title="Poprzedni dzień"><i class="fas fa-chevron-left"></i></button>
-            <button id="shift-modal-today" class="btn extracted-style-24" title="Przejdź do dzisiaj">Dziś</button>
-            <button id="shift-modal-next-day" class="btn modal-nav-btn" title="Następny dzień"><i class="fas fa-chevron-right"></i></button>
-          </div>
-           <div class="chassis-socket extracted-style-25">
-              <button id="shift-modal-close" class="shift-modal-close">&times;</button>
-            </div>
-        </div>
-
-        <div class="extracted-style-26">
-          <div class="extracted-style-27">
-            <button id="shift-filter-all" class="btn active extracted-style-28">Wszyscy (<span id="shift-cnt-all">0</span>)</button>
-            <button id="shift-filter-day" class="btn extracted-style-29"><i class="fas fa-sun"></i> Dzień (<span id="shift-cnt-day">0</span>)</button>
-            <button id="shift-filter-night" class="btn extracted-style-30"><i class="fas fa-moon"></i> Noc (<span id="shift-cnt-night">0</span>)</button>
-          </div>
-          <div class="input-chassis extracted-style-31">
-            <input type="text" id="shift-search-input" class="shift-input tactile-input" placeholder="Szukaj osoby lub ID..." class="extracted-style-32">
-          </div>
-        </div>
-
-        <div id="shift-modal-body" class="shift-modal-body extracted-style-33"></div>
-      </div>
-    `;
-    document.body.appendChild(modal);
-
-    document.getElementById("shift-modal-close").addEventListener("click", () => modal.classList.remove("active"));
-    modal.addEventListener("click", (e) => { if (e.target === modal) modal.classList.remove("active"); });
-
-    document.getElementById("shift-modal-prev-day").addEventListener("click", () => {
-      openShiftListModal(activeShiftModalDayIdx - 1, activeShiftFilter);
-    });
-
-    document.getElementById("shift-modal-next-day").addEventListener("click", () => {
-      openShiftListModal(activeShiftModalDayIdx + 1, activeShiftFilter);
-    });
-
-    document.getElementById("shift-modal-today").addEventListener("click", () => {
-      openShiftListModal(null, activeShiftFilter);
-    });
-
-    const btnAll = document.getElementById("shift-filter-all");
-    const btnDay = document.getElementById("shift-filter-day");
-    const btnNight = document.getElementById("shift-filter-night");
-    const searchInp = document.getElementById("shift-search-input");
-
-    const setFilter = (filt) => {
-      activeShiftFilter = filt;
+  function setShiftFilter(filt) {
+    activeShiftFilter = filt;
+    const btnAll = document.getElementById("shift-view-filter-all");
+    const btnDay = document.getElementById("shift-view-filter-day");
+    const btnNight = document.getElementById("shift-view-filter-night");
+    if (btnAll && btnDay && btnNight) {
       [btnAll, btnDay, btnNight].forEach(b => b.classList.remove("active"));
       if (filt === "all") btnAll.classList.add("active");
       if (filt === "day") btnDay.classList.add("active");
       if (filt === "night") btnNight.classList.add("active");
-      renderShiftModalList();
-    };
+    }
+  }
 
-    btnAll.addEventListener("click", () => setFilter("all"));
-    btnDay.addEventListener("click", () => setFilter("day"));
-    btnNight.addEventListener("click", () => setFilter("night"));
+  function initShiftsView() {
+    if (shiftsViewInitialized) return;
+    shiftsViewInitialized = true;
+
+    const prevBtn = document.getElementById("shift-view-prev-day");
+    const nextBtn = document.getElementById("shift-view-next-day");
+    const todayBtn = document.getElementById("shift-view-today");
+    const daySelect = document.getElementById("shift-view-day-select");
+
+    const btnAll = document.getElementById("shift-view-filter-all");
+    const btnDay = document.getElementById("shift-view-filter-day");
+    const btnNight = document.getElementById("shift-view-filter-night");
+    const searchInp = document.getElementById("shift-view-search-input");
+
+    if (prevBtn) {
+      prevBtn.addEventListener("click", () => {
+        audio.playClick("normal");
+        activeShiftDayIdx--;
+        renderShiftsView();
+      });
+    }
+
+    if (nextBtn) {
+      nextBtn.addEventListener("click", () => {
+        audio.playClick("normal");
+        activeShiftDayIdx++;
+        renderShiftsView();
+      });
+    }
+
+    if (todayBtn) {
+      todayBtn.addEventListener("click", () => {
+        audio.playClick("switch");
+        const daysArr = appState.allMonths[appState.activeMonthIdx]?.meta?.days || [];
+        const todayStr = String(new Date().getDate());
+        const tIdx = daysArr.indexOf(todayStr);
+        activeShiftDayIdx = tIdx !== -1 ? tIdx : 0;
+        renderShiftsView();
+      });
+    }
+
+    if (daySelect) {
+      daySelect.addEventListener("change", (e) => {
+        audio.playClick("switch");
+        activeShiftDayIdx = parseInt(e.target.value, 10) || 0;
+        renderShiftsView();
+      });
+    }
+
+    const seWrap = document.getElementById("shift-view-day-se-wrap");
+    const seBtn = document.getElementById("shift-view-day-se-btn");
+    const seList = document.getElementById("shift-view-day-se-list");
+
+    if (seBtn && seWrap && seList) {
+      seBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        audio.playClick("switch");
+        const isOpen = seWrap.classList.contains("se-select-open");
+        document.querySelectorAll(".se-select-wrap.se-select-open").forEach((w) => {
+          if (w !== seWrap) {
+            w.classList.remove("se-select-open");
+            w.querySelector(".se-select-btn")?.classList.remove("se-open");
+            w.querySelector(".se-select-list")?.classList.remove("se-visible");
+          }
+        });
+        seWrap.classList.toggle("se-select-open", !isOpen);
+        seBtn.classList.toggle("se-open", !isOpen);
+        seList.classList.toggle("se-visible", !isOpen);
+      });
+    }
+
+    if (btnAll) {
+      btnAll.addEventListener("click", () => {
+        audio.playClick("switch");
+        setShiftFilter("all");
+        renderShiftsView();
+      });
+    }
+
+    if (btnDay) {
+      btnDay.addEventListener("click", () => {
+        audio.playClick("switch");
+        setShiftFilter("day");
+        renderShiftsView();
+      });
+    }
+
+    if (btnNight) {
+      btnNight.addEventListener("click", () => {
+        audio.playClick("switch");
+        setShiftFilter("night");
+        renderShiftsView();
+      });
+    }
 
     if (searchInp) {
       searchInp.addEventListener("input", (e) => {
         activeShiftSearch = (e.target.value || "").trim().toLowerCase();
-        renderShiftModalList();
+        renderShiftsView();
       });
     }
   }
 
-  function renderShiftModalList() {
-    const body = document.getElementById("shift-modal-body");
-    const title = document.getElementById("shift-modal-title");
-    const cntAll = document.getElementById("shift-cnt-all");
-    const cntDay = document.getElementById("shift-cnt-day");
-    const cntNight = document.getElementById("shift-cnt-night");
+  function renderShiftsView() {
+    initShiftsView();
 
-    if (appState.allMonths.length === 0) return;
+    const titleEl = document.getElementById("shifts-view-title");
+    const contentEl = document.getElementById("shifts-view-content");
+    const cntAll = document.getElementById("shift-view-cnt-all");
+    const cntDay = document.getElementById("shift-view-cnt-day");
+    const cntNight = document.getElementById("shift-view-cnt-night");
+    const daySelect = document.getElementById("shift-view-day-select");
+
+    if (!contentEl || appState.allMonths.length === 0) return;
     const currentData = appState.allMonths[appState.activeMonthIdx];
     if (!currentData || !currentData.workers) return;
 
     const daysArr = currentData.meta.days || [];
     const weekdaysArr = currentData.meta.weekdays || [];
 
-    if (activeShiftModalDayIdx < 0) activeShiftModalDayIdx = 0;
-    if (activeShiftModalDayIdx >= daysArr.length) activeShiftModalDayIdx = daysArr.length - 1;
+    if (activeShiftDayIdx < 0) activeShiftDayIdx = 0;
+    if (activeShiftDayIdx >= daysArr.length) activeShiftDayIdx = Math.max(0, daysArr.length - 1);
+    activeShiftModalDayIdx = activeShiftDayIdx;
 
-    const dayNum = daysArr[activeShiftModalDayIdx] || (activeShiftModalDayIdx + 1);
-    const dayWd = weekdaysArr[activeShiftModalDayIdx] || "";
+    const dayNum = daysArr[activeShiftDayIdx] || (activeShiftDayIdx + 1);
+    const dayWd = weekdaysArr[activeShiftDayIdx] || "";
     const isToday = String(new Date().getDate()) === String(dayNum);
 
-    if (title) {
-      title.innerHTML = `
-        <i class="fas fa-users-viewfinder extracted-style-22"></i>
-        Dzień ${dayNum} <small class="extracted-style-34">(${dayWd}${isToday ? " • DZIŚ" : ""})</small>
+    if (titleEl) {
+      titleEl.innerHTML = `
+        <i class="fas fa-users-viewfinder"></i>
+        Obsada Zmianowa: ${dayNum} ${dayWd} <small class="extracted-style-34">${isToday ? "• DZIŚ" : ""}</small>
       `;
+    }
+
+    if (daySelect) {
+      if (daySelect.options.length !== daysArr.length) {
+        daySelect.innerHTML = daysArr.map((d, i) => {
+          const wd = weekdaysArr[i] || "";
+          const tFlag = String(new Date().getDate()) === String(d) ? " • Dziś" : "";
+          return `<option value="${i}">${d} ${wd}${tFlag}</option>`;
+        }).join("");
+      }
+      daySelect.value = String(activeShiftDayIdx);
+    }
+
+    const seWrap = document.getElementById("shift-view-day-se-wrap");
+    const seBtn = document.getElementById("shift-view-day-se-btn");
+    const seList = document.getElementById("shift-view-day-se-list");
+    const seLabel = document.getElementById("shift-view-day-se-label");
+
+    if (seList && seLabel) {
+      const curWd = weekdaysArr[activeShiftDayIdx] || "";
+      const curFlag = isToday ? " • Dziś" : "";
+      const isCurWeekend = curWd === "SO" || curWd === "ND";
+      seLabel.textContent = `${dayNum} ${curWd}${curFlag}`.trim();
+      seBtn?.classList.toggle("weekend", isCurWeekend);
+
+      seList.innerHTML = daysArr.map((d, i) => {
+        const wd = weekdaysArr[i] || "";
+        const tFlag = String(new Date().getDate()) === String(d) ? " • Dziś" : "";
+        const isSel = i === activeShiftDayIdx;
+        const isWeekend = wd === "SO" || wd === "ND";
+        return `
+          <div class="se-select-item ${isSel ? "se-selected" : ""} ${isWeekend ? "weekend" : ""}" data-val="${i}">
+            <span class="se-select-prefix">›</span>${d} ${wd}${tFlag}
+          </div>
+        `;
+      }).join("");
+
+      seList.querySelectorAll(".se-select-item").forEach((item) => {
+        item.addEventListener("click", (e) => {
+          e.stopPropagation();
+          audio.playClick("normal");
+          activeShiftDayIdx = parseInt(item.dataset.val, 10) || 0;
+          if (daySelect) daySelect.value = String(activeShiftDayIdx);
+          seWrap?.classList.remove("se-select-open");
+          seBtn?.classList.remove("se-open");
+          seList?.classList.remove("se-visible");
+          renderShiftsView();
+        });
+      });
     }
 
     const currentTheme = document.documentElement.getAttribute("theme") || "dark";
@@ -691,7 +825,7 @@
     const nightWorkers = [];
 
     currentData.workers.forEach((w, wIdx) => {
-      const val = getDisplayShiftCode(w.shifts ? w.shifts[activeShiftModalDayIdx] : "");
+      const val = getDisplayShiftCode(w.shifts ? w.shifts[activeShiftDayIdx] : "");
       if (val === "1" || val === "2") {
         const grpCode = getWorkerGroupCode(w);
         const groupData = groupMetadata[grpCode];
@@ -737,13 +871,19 @@
     const showDay = activeShiftFilter === "all" || activeShiftFilter === "day";
     const showNight = activeShiftFilter === "all" || activeShiftFilter === "night";
 
+    if (activeShiftFilter !== "all") {
+      contentEl.classList.add("single-col");
+    } else {
+      contentEl.classList.remove("single-col");
+    }
+
     let html = "";
     if (showDay) {
       html += `
-        <div class="shift-column extracted-style-35">
+        <div class="card hud-bracket shift-column-card">
           <div class="shift-col-header day"><i class="fas fa-sun"></i> DNIÓWKA (${dayWorkers.length})</div>
           <div class="shift-col-list">
-            ${dayWorkers.length ? dayWorkers.map(buildWorkerRow).join("") : "<div class='shift-empty-msg'>Brak obsady</div>"}
+            ${dayWorkers.length ? dayWorkers.map(buildWorkerRow).join("") : "<div class='shift-empty-msg'>Brak obsady na dniówce</div>"}
           </div>
         </div>
       `;
@@ -751,10 +891,10 @@
 
     if (showNight) {
       html += `
-        <div class="shift-column extracted-style-35">
+        <div class="card hud-bracket shift-column-card">
           <div class="shift-col-header night"><i class="fas fa-moon"></i> NOCKA (${nightWorkers.length})</div>
           <div class="shift-col-list">
-            ${nightWorkers.length ? nightWorkers.map(buildWorkerRow).join("") : "<div class='shift-empty-msg'>Brak obsady</div>"}
+            ${nightWorkers.length ? nightWorkers.map(buildWorkerRow).join("") : "<div class='shift-empty-msg'>Brak obsady na nocce</div>"}
           </div>
         </div>
       `;
@@ -764,10 +904,11 @@
       html = `<div class="shift-modal-empty extracted-style-36">Brak pracowników spełniających kryteria.</div>`;
     }
 
-    body.innerHTML = html;
+    contentEl.innerHTML = html;
 
-    body.querySelectorAll(".shift-worker-item").forEach(item => {
+    contentEl.querySelectorAll(".shift-worker-item").forEach(item => {
       item.addEventListener("click", () => {
+        audio.playClick("normal");
         const wIdx = parseInt(item.dataset.w, 10);
         if (!isNaN(wIdx)) {
           openWorkerCalendarModal(wIdx);
@@ -776,40 +917,27 @@
     });
   }
 
+  function createShiftListModal() {
+    initShiftsView();
+  }
+
+  function renderShiftModalList() {
+    renderShiftsView();
+  }
+
   function openShiftListModal(eOrIdx = null, filter = "all") {
-    createShiftListModal();
-    const modal = document.getElementById("shift-modal-overlay");
-    if (!modal) return;
-
-    if (appState.allMonths.length === 0) return;
-    const currentData = appState.allMonths[appState.activeMonthIdx];
-    if (!currentData || !currentData.workers) return;
-
-    const daysArr = currentData.meta.days || [];
+    const daysArr = appState.allMonths[appState.activeMonthIdx]?.meta?.days || [];
     const todayStr = String(new Date().getDate());
     const todayIdx = daysArr.indexOf(todayStr);
 
+    let targetDayIdx = activeShiftDayIdx;
     if (typeof eOrIdx === "number") {
-      activeShiftModalDayIdx = eOrIdx;
-    } else if (eOrIdx == null) {
-      activeShiftModalDayIdx = todayIdx !== -1 ? todayIdx : 0;
+      targetDayIdx = eOrIdx;
+    } else if (eOrIdx === null) {
+      targetDayIdx = todayIdx !== -1 ? todayIdx : 0;
     }
 
-    if (filter) {
-      activeShiftFilter = filter;
-      const btnAll = document.getElementById("shift-filter-all");
-      const btnDay = document.getElementById("shift-filter-day");
-      const btnNight = document.getElementById("shift-filter-night");
-      if (btnAll && btnDay && btnNight) {
-        [btnAll, btnDay, btnNight].forEach(b => b.classList.remove("active"));
-        if (filter === "all") btnAll.classList.add("active");
-        if (filter === "day") btnDay.classList.add("active");
-        if (filter === "night") btnNight.classList.add("active");
-      }
-    }
-
-    renderShiftModalList();
-    modal.classList.add("active");
+    switchView("shifts", targetDayIdx, filter || "all");
   }
 
   // ==========================================
@@ -994,6 +1122,85 @@
     });
   }
 
+  let cachedGitHubCommit = null;
+
+  async function fetchGitHubCommitDate() {
+    if (cachedGitHubCommit) return cachedGitHubCommit;
+    try {
+      const res = await fetch("https://api.github.com/repos/s-pro-v/json-lista/commits?path=mobile-grafik.json&page=1&per_page=1", {
+        headers: { "Accept": "application/vnd.github.v3+json" }
+      });
+      if (res.ok) {
+        const list = await res.json();
+        if (Array.isArray(list) && list[0] && list[0].commit) {
+          cachedGitHubCommit = {
+            date: list[0].commit.committer?.date || list[0].commit.author?.date,
+            message: list[0].commit.message || ""
+          };
+          return cachedGitHubCommit;
+        }
+      }
+    } catch (e) { }
+    return null;
+  }
+
+  function formatRelativeTimeSpan(date) {
+    if (!date || isNaN(date.getTime())) return "Brak danych";
+    const now = Date.now();
+    const diffMs = now - date.getTime();
+    if (diffMs < 0) return "Przed chwilą";
+    const mins = Math.floor(diffMs / 60000);
+    if (mins < 1) return "Przed chwilą";
+    if (mins < 60) return `${mins} min temu`;
+    const hours = Math.floor(mins / 60);
+    if (hours < 24) return `${hours} godz. temu`;
+    const days = Math.floor(hours / 24);
+    if (days === 1) return "Wczoraj";
+    if (days < 30) return `${days} dni temu`;
+    const months = Math.floor(days / 30);
+    return `${months} mies. temu`;
+  }
+
+  // ==========================================
+  // ZARZĄDZANIE STANEM AKTUALIZACJI PLIKU
+  // ==========================================
+  const STORAGE_SEEN_FILE_UPDATE = "oxy_seen_file_update";
+  let isNewFileUpdateActive = false;
+
+  function evaluateFileUpdateState(rawGenerated) {
+    if (!rawGenerated) return false;
+
+    // Jeśli w bieżącym uruchomieniu (przed odświeżeniem strony) oznaczono jako nową aktualizację
+    if (isNewFileUpdateActive) return true;
+
+    const lastSeen = localStorage.getItem(STORAGE_SEEN_FILE_UPDATE);
+
+    if (!lastSeen) {
+      localStorage.setItem(STORAGE_SEEN_FILE_UPDATE, rawGenerated);
+      return false;
+    }
+
+    if (lastSeen !== rawGenerated) {
+      // Wykryto nowy plik - tylko data i ikona na zielono do pierwszego odświeżenia strony
+      isNewFileUpdateActive = true;
+      localStorage.setItem(STORAGE_SEEN_FILE_UPDATE, rawGenerated);
+      return true;
+    }
+
+    return false;
+  }
+
+  function applyFileUpdateUiState(isNew) {
+    const cardEl = document.getElementById("file-update-card");
+    if (cardEl) {
+      if (isNew) {
+        cardEl.classList.add("has-new-update");
+      } else {
+        cardEl.classList.remove("has-new-update");
+      }
+    }
+  }
+
   function syncDashboardCharts() {
     if (appState.allMonths.length === 0) return;
     const currentData = appState.allMonths[appState.activeMonthIdx];
@@ -1114,12 +1321,69 @@
       charts.wave.update();
     }
 
+    // ==========================================
+    // STATUS I AKTUALIZACJA PLIKU GRAFIKU
+    // ==========================================
+    const rawGenerated = currentData.meta?.generated || localStorage.getItem("oxy_last_cloud_sync");
+    let genDate = rawGenerated ? new Date(rawGenerated) : null;
+    if (genDate && isNaN(genDate.getTime())) genDate = null;
+
+    let fileDateStr = "--.--.----";
+    let fileTimeStr = "--:--:--";
+    let relativeStr = "Brak znacznika daty";
+
+    if (genDate) {
+      fileDateStr = genDate.toLocaleDateString("pl-PL", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric"
+      });
+      fileTimeStr = genDate.toLocaleTimeString("pl-PL", {
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit"
+      });
+      relativeStr = formatRelativeTimeSpan(genDate);
+    }
+
+    const primaryDateEl = document.getElementById("file-primary-date");
+    const primaryTimeEl = document.getElementById("file-primary-time");
+    const relativeTextEl = document.getElementById("file-relative-text");
+    const monthLabelEl = document.getElementById("file-month-label");
+    const workersCountEl = document.getElementById("file-workers-count");
+    const commitTimeEl = document.getElementById("file-commit-time");
+
+    if (primaryDateEl) primaryDateEl.textContent = fileDateStr;
+    if (primaryTimeEl) primaryTimeEl.textContent = genDate ? `godz. ${fileTimeStr}` : "--:--:--";
+    if (relativeTextEl) {
+      relativeTextEl.textContent = genDate ? `Wygenerowano ${relativeStr}` : "Brak danych o generowaniu";
+    }
+    if (monthLabelEl) monthLabelEl.textContent = currentData.meta?.month || "Bieżący";
+    if (workersCountEl) workersCountEl.textContent = `${currentData.workers.length} osób`;
+
+    // Ustawienie stanu wizualnego (tylko data i ikona na zielono do pierwszego odświeżenia)
+    const isNew = evaluateFileUpdateState(rawGenerated);
+    applyFileUpdateUiState(isNew);
+
+    // Asynchroniczne sprawdzenie ostatniego commita pliku w repozytorium GitHub
+    fetchGitHubCommitDate().then((commitInfo) => {
+      if (commitInfo && commitInfo.date) {
+        const cDate = new Date(commitInfo.date);
+        const cRel = formatRelativeTimeSpan(cDate);
+        if (commitTimeEl) {
+          commitTimeEl.textContent = cRel;
+          commitTimeEl.title = `Commit GitHub: ${cDate.toLocaleString("pl-PL")}\n${commitInfo.message || ""}`;
+        }
+      } else {
+        if (commitTimeEl) commitTimeEl.textContent = "Zsynchronizowano";
+      }
+    });
+
     const lastUpdateEl = document.getElementById("last-update-time");
     if (lastUpdateEl) {
-      const nowStr = new Date().toLocaleTimeString("pl-PL", { hour: "2-digit", minute: "2-digit" });
       lastUpdateEl.innerHTML = `
         <span class="led-indicator ${serverOnline ? "active" : ""}"></span>
-        <i class="fas fa-clock last-update-icon"></i> Dziś, ${nowStr}
+        <i class="fas fa-clock-rotate-left last-update-icon ${isNew ? "text-green" : ""}"></i> <span class="${isNew ? "text-green" : ""}">Plik: ${fileDateStr}</span> (${relativeStr})
       `;
     }
 
@@ -1127,12 +1391,21 @@
     if (sysInfoList) {
       sysInfoList.innerHTML = `
         <div class="transaction-item extracted-style-37">
-          <div class="widget-icon ${serverOnline ? "icon-bg-green" : "icon-bg-red"}" class="extracted-style-38">
+          <div class="widget-icon ${serverOnline ? "icon-bg-green" : "icon-bg-red"} extracted-style-38">
             <i class="fas ${serverOnline ? "fa-shield-halved" : "fa-shield"}"></i>
           </div>
           <div class="extracted-style-39">
             <div class="extracted-style-40">Autoryzacja Serwera</div>
             <div class="extracted-style-41">${serverOnline ? "ONLINE (JWT + GitHub API)" : "OFFLINE (Brak połączenia)"}</div>
+          </div>
+        </div>
+        <div class="transaction-item extracted-style-42">
+          <div class="widget-icon ${isNew ? "icon-bg-green" : "icon-bg-blue"} extracted-style-38">
+            <i class="fas fa-clock-rotate-left"></i>
+          </div>
+          <div class="extracted-style-39">
+            <div class="extracted-style-40">Ostatni Update Pliku</div>
+            <div class="extracted-style-41 ${isNew ? "text-green" : ""}">${fileDateStr}, ${fileTimeStr} (${relativeStr})</div>
           </div>
         </div>
         <div class="transaction-item extracted-style-37">
@@ -1696,7 +1969,7 @@
 
     async function syncUsersFromSchedule(silent = false) {
       if (btnSyncUsers) {
-        btnSyncUsers.innerHTML = '<i class="fas fa-spinner fa-spin"></i> SYNCHRONIZACJA Z SERWEREM...';
+        btnSyncUsers.innerHTML = '<i class="fas fa-spinner fa-spin"></i> DOWNLOAD...';
       }
 
       try {
@@ -1707,7 +1980,7 @@
           await renderUsers();
           renderQuickLoginList();
           checkServerStatus();
-          if (!silent) oxyAlert(`Zsynchronizowano konta na serwerze (dodano ${added} profili, zaktualizowano plik <code>${targetFile}</code>).`, "success", "SYNCHRONIZACJA SERWERA");
+          if (!silent) oxyAlert(`Zsynchronizowano konta na serwerze (dodano ${added} profili, zaktualizowano plik <code>${targetFile}</code>).`, "success", "SYNC");
           return;
         }
         throw new Error(apiRes.data?.message || "Błąd komunikacji z serwerem");
@@ -1715,14 +1988,14 @@
         if (!silent) oxyAlert("Błąd synchronizacji serwera: " + err.message, "error", "BŁĄD");
       } finally {
         if (btnSyncUsers) {
-          btnSyncUsers.innerHTML = '<i class="fas fa-rotate"></i> SYNCHRONIZUJ';
+          btnSyncUsers.innerHTML = '<i class="fas fa-rotate"></i> DOWNLOAD';
         }
       }
     }
 
     async function renderUsers() {
       if (!listEl) return;
-      listEl.innerHTML = '<div class="extracted-style-44"><i class="fas fa-spinner fa-spin"></i> Pobieranie kont z serwera...</div>';
+      listEl.innerHTML = '<div class="extracted-style-44"><i class="fas fa-spinner fa-spin"></i> dowload...</div>';
 
       let users = [];
       const apiRes = await apiRequest("/api/users");
@@ -1885,7 +2158,7 @@
               </div>
               <div class="change-pass-actions">
                 <div class="btn-bg"><button type="button" id="btn-cancel-pass" class="btn">ANULUJ</button></div>
-                <div class="btn-bg"><button type="button" id="btn-submit-pass" class="btn active">ZAPISZ POD TOKEN</button></div>
+                <div class="btn-bg"><button type="button" id="btn-submit-pass" class="btn active">ZAPISZ</button></div>
               </div>
             </div>
           </div>
@@ -1917,7 +2190,7 @@
           return;
         }
 
-        btnSubmit.innerHTML = '<i class="fas fa-spinner fa-spin"></i> ZAPISYWANIE POD TOKEN...';
+        btnSubmit.innerHTML = '<i class="fas fa-spinner fa-spin"></i> ZAPISYWANIE...';
         btnSubmit.disabled = true;
 
         try {
@@ -2005,18 +2278,27 @@
     initLoginSystem();
 
     if (typeof AppIcons !== "undefined") {
-      const injectIcon = (id, iconSvg) => {
+      const injectIcon = (id, iconSvg, fallbackHtml = "") => {
         const dest = document.getElementById(id);
-        if (dest && iconSvg) dest.innerHTML = iconSvg;
+        if (dest) {
+          if (iconSvg && typeof iconSvg === "string" && iconSvg.trim()) {
+            dest.innerHTML = iconSvg;
+          } else if (fallbackHtml) {
+            dest.innerHTML = fallbackHtml;
+          }
+        }
       };
       injectIcon("icon-calendar-dest", AppIcons.calendarGlass);
       injectIcon("icon-cube-dest", AppIcons.cubeGlass);
       injectIcon("icon-cloud-download-dest", AppIcons.cloudDownload);
       injectIcon("icon-sun-dest", savedTheme === "light" ? AppIcons.sparkle2 : AppIcons.brightnessIncrease);
       injectIcon("icon-file-download-dest", AppIcons.filedownload);
+      injectIcon("icon-user-dest", AppIcons.userdest || AppIcons.userGlass, '<i class="fas fa-user-cog"></i>');
+      injectIcon("circle-power-off-dest", AppIcons.circlepoweroffdest || AppIcons.powerGlass, '<i class="fas fa-sign-out-alt logout-icon"></i>');
     }
 
     createShiftListModal();
+    initShiftsView();
     createWorkerCalendarModal();
     initServerConfigModal();
     loadData();
@@ -2024,11 +2306,13 @@
     initCharts();
     startClock();
     renderSchedule();
+    renderShiftsView();
 
-    const btnKto = document.getElementById("btn-kto-na-zmianie");
+    const btnKto = document.getElementById("btn-kto-na-zmianie") || document.getElementById("btn-view-shifts");
     if (btnKto) {
       btnKto.addEventListener("click", () => {
-        openShiftListModal();
+        audio.playClick("switch");
+        switchView("shifts");
       });
     }
 
@@ -2036,14 +2320,20 @@
     if (wDay) {
       wDay.style.cursor = "pointer";
       wDay.title = "Kliknij, aby otworzyć listę pracowników na dniówce";
-      wDay.addEventListener("click", () => openShiftListModal(null, "day"));
+      wDay.addEventListener("click", () => {
+        audio.playClick("switch");
+        openShiftListModal(null, "day");
+      });
     }
 
     const wNight = document.getElementById("widget-night-count")?.closest(".widget-card");
     if (wNight) {
       wNight.style.cursor = "pointer";
       wNight.title = "Kliknij, aby otworzyć listę pracowników na nocce";
-      wNight.addEventListener("click", () => openShiftListModal(null, "night"));
+      wNight.addEventListener("click", () => {
+        audio.playClick("switch");
+        openShiftListModal(null, "night");
+      });
     }
 
     const btnCloud = document.getElementById("btn-cloud-fetch");
@@ -2058,18 +2348,25 @@
           appState.allMonths = data;
           appState.content = JSON.stringify(data, null, 2);
           localStorage.setItem(STORAGE_KEY, appState.content);
+          localStorage.setItem("oxy_last_cloud_sync", new Date().toISOString());
+
+          appState.activeMonthIdx = findCurrentMonthIndex();
+          const currentGen = (data[appState.activeMonthIdx]?.meta?.generated) || new Date().toISOString();
+          isNewFileUpdateActive = true;
+          localStorage.setItem(STORAGE_SEEN_FILE_UPDATE, currentGen);
+          cachedGitHubCommit = null;
 
           const editorEl = document.getElementById("json-editor");
           if (editorEl) editorEl.value = appState.content;
 
-          appState.activeMonthIdx = findCurrentMonthIndex();
           renderSchedule();
+          syncDashboardCharts();
 
           if (typeof window.syncUsersFromSchedule === "function") {
             window.syncUsersFromSchedule(true);
           }
 
-          oxyAlert("Pobrano najnowsze dane z chmury.", "success", "SYNCHRONIZACJA");
+          oxyAlert("Pobrano najnowsze dane z chmury. Grafik został zaktualizowany.", "success", "Update");
         } catch (e) {
           oxyAlert("Błąd chmury: " + e.message, "error", "BŁĄD");
         } finally {
@@ -2103,20 +2400,29 @@
     }
 
     let deferredInstallPrompt = null;
-    window.addEventListener("beforeinstallprompt", (e) => {
-      e.preventDefault();
-      deferredInstallPrompt = e;
-      const pwaBtn = document.getElementById("btn-pwa-install");
-      if (pwaBtn) pwaBtn.style.opacity = "1";
-    });
-
     const pwaBtn = document.getElementById("btn-pwa-install");
+
+    function isPwaInstalled() {
+      return window.matchMedia('(display-mode: standalone)').matches ||
+        window.matchMedia('(display-mode: fullscreen)').matches ||
+        window.matchMedia('(display-mode: minimal-ui)').matches ||
+        window.navigator.standalone === true ||
+        document.referrer.includes('android-app://') ||
+        localStorage.getItem("oxy_pwa_installed") === "true";
+    }
+
     if (pwaBtn) {
+      if (isPwaInstalled()) {
+        pwaBtn.style.display = "none";
+      }
+
       pwaBtn.addEventListener("click", async () => {
         if (deferredInstallPrompt) {
           deferredInstallPrompt.prompt();
           const { outcome } = await deferredInstallPrompt.userChoice;
           if (outcome === "accepted") {
+            localStorage.setItem("oxy_pwa_installed", "true");
+            pwaBtn.style.display = "none";
             oxyAlert("Aplikacja OXY_OS została pomyślnie zainstalowana.", "success", "PWA");
           }
           deferredInstallPrompt = null;
@@ -2125,6 +2431,30 @@
         }
       });
     }
+
+    window.addEventListener("beforeinstallprompt", (e) => {
+      e.preventDefault();
+      deferredInstallPrompt = e;
+      if (pwaBtn && !isPwaInstalled()) {
+        pwaBtn.style.display = "";
+        pwaBtn.style.opacity = "1";
+      }
+    });
+
+    window.addEventListener("appinstalled", () => {
+      localStorage.setItem("oxy_pwa_installed", "true");
+      deferredInstallPrompt = null;
+      if (pwaBtn) pwaBtn.style.display = "none";
+      oxyAlert("Aplikacja OXY_OS została zainstalowana.", "success", "PWA");
+    });
+
+    try {
+      window.matchMedia('(display-mode: standalone)').addEventListener('change', (evt) => {
+        if (evt.matches && pwaBtn) {
+          pwaBtn.style.display = "none";
+        }
+      });
+    } catch (e) { }
   }
 
   window._oxyAudio = audio;
@@ -2137,6 +2467,14 @@
 })();
 
 document.addEventListener("click", (e) => {
+  if (!e.target.closest(".se-select-wrap")) {
+    document.querySelectorAll(".se-select-wrap.se-select-open").forEach((w) => {
+      w.classList.remove("se-select-open");
+      w.querySelector(".se-select-btn")?.classList.remove("se-open");
+      w.querySelector(".se-select-list")?.classList.remove("se-visible");
+    });
+  }
+
   const btn = e.target.closest("button, .btn, .icon-btn, .month-tab-btn, .option");
   if (btn && !btn.classList.contains("select-trigger")) {
     if (window._oxyAudio && typeof window._oxyAudio.playClick === "function") {

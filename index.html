@@ -34,7 +34,7 @@
             <h2 class="card-title login-box-title">AUTORYZACJA OXY_OS</h2>
             <div class="login-server-status" id="login-server-status" title="Sprawdzanie statusu serwera...">
                 <span class="led-indicator" id="login-server-led"></span>
-                <span id="login-server-text">Łączenie z serwerem...</span>
+                <span id="login-server-text">Łączenie...</span>
             </div>
             <div class="login-input-group">
                 <div class="input-chassis">
@@ -66,7 +66,7 @@
             <!-- Szybki wybór konta jednym kliknięciem -->
             <div class="login-quick-section">
                 <div class="login-quick-header">
-                    <span>SZYBKI WYBÓR PROFILU</span>
+                    <span>Profile</span>
                     <span class="zebra-stripe"></span>
                 </div>
                 <div id="login-quick-list" class="login-quick-list"></div>
@@ -79,13 +79,13 @@
         <div class="shift-modal-content users-modal-content">
             <div class="shift-modal-header">
                 <h3 class="shift-modal-title">
-                    <i class="fas fa-users users-modal-heading-icon"></i> Zarządzanie Użytkownikami
+                    <i class="fas fa-users users-modal-heading-icon"></i> User
                 </h3>
                 <div class="users-modal-header-actions">
                     <div class="btn-bg">
                         <button id="btn-sync-users" class="btn btn-sync-users"
                             title="Generuj konta na podstawie pracowników z grafiku">
-                            <i class="fas fa-rotate"></i> SYNCHRONIZUJ
+                            <i class="fas fa-rotate"></i> update
                         </button>
                     </div>
                     <div class="chassis-socket">
@@ -152,10 +152,10 @@
 
                 <div class="server-actions-row">
                     <div class="btn-bg">
-                        <button type="button" id="btn-reset-api-url" class="btn">AUTOMATYCZNY</button>
+                        <button type="button" id="btn-reset-api-url" class="btn">Auto</button>
                     </div>
                     <div class="btn-bg">
-                        <button type="button" id="btn-save-api-url" class="btn active">ZAPISZ I POŁĄCZ</button>
+                        <button type="button" id="btn-save-api-url" class="btn active">POŁĄCZ</button>
                     </div>
                 </div>
             </div>
@@ -182,7 +182,7 @@
                         </button>
                     </div>
                     <div class="btn-bg">
-                        <button id="btn-kto-na-zmianie" class="btn" title="Kto na Zmianie (Obsada)">
+                        <button id="btn-view-shifts" class="btn" title="Kto na Zmianie (Obsada)">
                             <i class="fas fa-users-viewfinder"></i> Zmiana
                         </button>
                     </div>
@@ -191,7 +191,7 @@
                             <i class="fas fa-calendar-days"></i> Grafik
                         </button>
                     </div>
-                    <div class="btn-bg">
+                    <div class="btn-bg" style="display: none !important;">
                         <button id="btn-view-code" class="btn" title="Widok Kodu JSON">
                             <i class="fas fa-code"></i> Kod
                         </button>
@@ -209,10 +209,10 @@
                         <div class="icon-btn-icon" id="icon-file-download-dest"></div>
                     </button>
                     <button class="icon-btn" id="btn-users" title="Zarządzaj / przełącz konta">
-                        <i class="fas fa-user-cog"></i>
+                        <div class="icon-btn-icon" id="icon-user-dest"><i class="fas fa-user-cog"></i></div>
                     </button>
                     <button class="icon-btn" id="btn-logout" title="Wyloguj ze strony">
-                        <i class="fas fa-sign-out-alt logout-icon"></i>
+                        <div class="icon-btn-icon" id="circle-power-off-dest"><i class="fas fa-sign-out-alt logout-icon"></i></div>
                     </button>
 
                 </div>
@@ -221,12 +221,9 @@
             <div id="view-dashboard" class="view-container active view-dashboard-layout">
                 <div class="card hud-bracket">
                     <div class="card-header">
-                        <h2 class="card-title">Rozkład Godzin Pracowników</h2>
+                        <h2 class="card-title">Rozkład Godzin</h2>
                         <div class="select-chassis select-chassis-transparent">
-                            <select class="year-selector tactile-input select-input-transparent">
-                                <option value="2026">2026</option>
-                                <option value="2025">2025</option>
-                            </select>
+
                         </div>
                     </div>
                     <div class="chart-wrapper chart-large">
@@ -276,7 +273,7 @@
 
                 <div class="card hud-bracket">
                     <div class="card-header">
-                        <h2 class="card-title">Obsada Zmianowa (Dzień vs Noc)</h2>
+                        <h2 class="card-title">Obsada (Dzień vs Noc)</h2>
                         <div class="legend-area">
                             <span class="legend-item"><span class="legend-dot bg-blue"></span> Dzień</span>
                             <span class="legend-item"><span class="legend-dot bg-red"></span> Noc</span>
@@ -288,11 +285,72 @@
                 </div>
             </div>
 
+            <div id="view-shifts" class="view-container view-shifts-layout">
+                <div class="card hud-bracket shifts-control-card">
+                    <div class="shifts-toolbar">
+                        <div class="shifts-title-group">
+                            <h2 class="card-title shifts-main-title" id="shifts-view-title">
+                                <i class="fas fa-users-viewfinder"></i> Obsada Zmianowa
+                            </h2>
+                            <div class="modal-day-controls tab-chassis shifts-day-nav">
+                                <button id="shift-view-prev-day" class="btn modal-nav-btn" title="Poprzedni dzień"><i
+                                        class="fas fa-chevron-left"></i></button>
+                                <button id="shift-view-today" class="btn active"
+                                    title="Przejdź do dzisiaj">Dziś</button>
+                                <button id="shift-view-next-day" class="btn modal-nav-btn" title="Następny dzień"><i
+                                        class="fas fa-chevron-right"></i></button>
+                            </div>
+                            <div class="btn-bg btn-bg-dropdown select-chassis-day">
+                                <div class="se-select-wrap" id="shift-view-day-se-wrap">
+                                    <button type="button" class="se-select-btn" id="shift-view-day-se-btn"
+                                        title="Wybierz dzień miesiąca">
+                                        <span class="se-select-label" id="shift-view-day-se-label">Wybierz
+                                            dzień...</span>
+                                        <i class="fas fa-chevron-down se-select-arrow"></i>
+                                    </button>
+                                    <div class="se-select-list" id="shift-view-day-se-list"></div>
+                                    <select id="shift-view-day-select" style="display: none;"></select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="shifts-filter-search-group">
+                            <div class="btn-group tab-chassis shifts-filter-tabs">
+                                <div class="btn-bg">
+                                    <button id="shift-view-filter-all" class="btn active">
+                                        Wszyscy (<span id="shift-view-cnt-all">0</span>)
+                                    </button>
+                                </div>
+                                <div class="btn-bg">
+                                    <button id="shift-view-filter-day" class="btn">
+                                        <i class="fas fa-sun"></i> Dzień (<span id="shift-view-cnt-day">0</span>)
+                                    </button>
+                                </div>
+                                <div class="btn-bg">
+                                    <button id="shift-view-filter-night" class="btn">
+                                        <i class="fas fa-moon"></i> Noc (<span id="shift-view-cnt-night">0</span>)
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="input-chassis shifts-search-chassis">
+                                <i class="fas fa-search shifts-search-icon"></i>
+                                <input type="text" id="shift-view-search-input" class="shift-input tactile-input"
+                                    placeholder="Szukaj osoby lub ID...">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="shifts-view-content" class="shifts-columns-container">
+                    <!-- Kolumny Dniówka i Nocka generowane dynamicznie -->
+                </div>
+            </div>
+
             <div id="view-schedule" class="view-container">
                 <div class="schedule-view-content" id="schedule-content"></div>
             </div>
 
-            <div id="view-code" class="view-container">
+            <div id="view-code" class="view-container" style="display: none !important;">
                 <div class="editor-wrapper">
                     <div class="line-numbers" id="line-numbers">1</div>
                     <textarea id="json-editor" spellcheck="false"></textarea>
@@ -325,20 +383,55 @@
                 </div>
             </div>
 
-            <div class="card hud-bracket">
-                <h2 class="card-title section-title-spacing">Obsada wg Kodów</h2>
-                <div>
-                    <p class="widget-label">Statystyka zmianowa</p>
-                    <h3 class="wallet-amount">Top <span class="wallet-currency">6 kodów</span></h3>
+            <div class="card hud-bracket file-update-card" id="file-update-card">
+                <div class="card-header file-update-card-header">
+                    <h2 class="card-title"><i class="fas fa-file-code"></i> Status Pliku</h2>
+                    <span class="tactile-badge file-sync-badge" id="file-sync-badge">
+                        <span class="led-indicator active" id="file-status-led"></span>
+                        <span id="file-status-badge-text">Zsynchronizowano</span>
+                    </span>
                 </div>
-                <div class="chart-wrapper chart-small">
-                    <canvas id="walletSummaryChart"></canvas>
+                <div class="file-update-body">
+                    <p class="widget-label">Aktualizacja pliku grafiku</p>
+                    <div class="file-update-main-display">
+                        <div class="file-update-icon-box">
+                            <i class="fas fa-clock-rotate-left"></i>
+                        </div>
+                        <div class="file-update-timestamp-content">
+                            <h3 class="file-update-primary-date" id="file-primary-date">--.--.----</h3>
+                            <p class="file-update-primary-time" id="file-primary-time">--:--:--</p>
+                        </div>
+                    </div>
+                    <div class="file-update-relative-box" id="file-relative-box">
+                        <i class="fas fa-circle-check"></i>
+                        <span id="file-relative-text">Wczytywanie informacji...</span>
+                    </div>
+
+                    <div class="file-update-details-grid">
+                        <div class="file-detail-col">
+                            <span class="detail-label">Plik</span>
+                            <span class="detail-value" id="file-name-label"
+                                title="mobile-grafik.json">mobile-grafik.json</span>
+                        </div>
+                        <div class="file-detail-col">
+                            <span class="detail-label">Miesiąc</span>
+                            <span class="detail-value" id="file-month-label">--</span>
+                        </div>
+                        <div class="file-detail-col">
+                            <span class="detail-label">Obsada bazy</span>
+                            <span class="detail-value" id="file-workers-count">-- osób</span>
+                        </div>
+                        <div class="file-detail-col">
+                            <span class="detail-label">Commit GitHub</span>
+                            <span class="detail-value" id="file-commit-time">Sprawdzanie...</span>
+                        </div>
+                    </div>
                 </div>
             </div>
 
             <div class="card hud-bracket transactions-card">
                 <div class="card-header card-header-column">
-                    <h2 class="card-title">Ostatnia Aktualizacja</h2>
+                    <h2 class="card-title">Last Update</h2>
                     <p id="last-update-time" class="last-update-text tactile-badge">
                         <span class="led-indicator active"></span>
                         <i class="fas fa-clock last-update-icon"></i> Brak danych

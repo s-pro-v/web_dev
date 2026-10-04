@@ -526,11 +526,19 @@ app.get("/api/status", (req, res) => {
   }
 
   const users = loadUsers();
+  let dbLastModified = null;
+  try {
+    if (fs.existsSync(DB_FILE)) {
+      dbLastModified = fs.statSync(DB_FILE).mtime.toISOString();
+    }
+  } catch (e) {}
+
   res.json({
     success: true,
     status: "ONLINE",
     version: "2.5.0 (main.json Sync)",
     databaseFile: path.basename(DB_FILE),
+    databaseLastModified: dbLastModified,
     usersCount: users.length,
     githubConfigured: Boolean(GITHUB_TOKEN),
     githubRepo: `${GITHUB_REPO_OWNER}/${GITHUB_REPO_NAME}`,

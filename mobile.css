@@ -8,7 +8,6 @@
    ========================================================================== */
 
 /* Ukrycie pionowego paska przewijania na urządzeniach mobilnych */
-
 html,
 body,
 .dashboard-wrapper,
@@ -16,12 +15,13 @@ body,
 .view-container,
 .view-dashboard-layout,
 .sidebar {
-    scrollbar-width: none !important; /* Firefox */
-    -ms-overflow-style: none !important; /* IE / stary Edge */
+    scrollbar-width: none !important;
+    /* Firefox */
+    -ms-overflow-style: none !important;
+    /* IE / stary Edge */
 }
 
 /* Chrome, Safari, WebView na telefonach */
-
 html::-webkit-scrollbar,
 body::-webkit-scrollbar,
 .dashboard-wrapper::-webkit-scrollbar,
@@ -89,7 +89,6 @@ body::-webkit-scrollbar,
         margin-top: 0.78rem;
     }
 
-
     .sidebar {
         width: 100%;
         height: auto;
@@ -99,9 +98,10 @@ body::-webkit-scrollbar,
         box-sizing: border-box;
     }
 
-    /* Ukrycie panelu bocznego w widokach pełnoekranowych (Grafik, Edytor Kodu) */
+    /* Ukrycie panelu bocznego w widokach pełnoekranowych (Grafik, Edytor Kodu, Obsada Zmianowa) */
     .dashboard-wrapper:has(#view-schedule.active) .sidebar,
-    .dashboard-wrapper:has(#view-code.active) .sidebar {
+    .dashboard-wrapper:has(#view-code.active) .sidebar,
+    .dashboard-wrapper:has(#view-shifts.active) .sidebar {
         display: none;
     }
 
@@ -178,11 +178,16 @@ body::-webkit-scrollbar,
 
     .dashboard-header>.btn-group.tab-chassis .btn.active {
         background: var(--highlight-subtle);
+        color: var(--text-color);
+    }
+
+    .dashboard-header>.btn-group.tab-chassis .btn.active i {
+
         color: var(--highlight-color);
     }
 
     .dashboard-header>.btn-group.tab-chassis .btn.active::before {
-        content: '';
+        content: "";
         position: absolute;
         top: 0;
         left: 12%;
@@ -191,7 +196,6 @@ body::-webkit-scrollbar,
         background: var(--highlight-color);
         box-shadow: 0 0 8px var(--highlight-color);
     }
-
 }
 
 /* ==========================================================================
@@ -206,17 +210,16 @@ body::-webkit-scrollbar,
         left: 0;
         z-index: 1000;
         width: 100%;
-        margin: 0;
-        padding: max(10px, env(safe-area-inset-top, 0px)) 10px 10px 10px;
+        margin: 0 auto;
+        padding: max(7px, env(safe-area-inset-top, 0px)) 10px 7px 10px;
         height: auto;
-        min-height: 50px;
+        min-height: 45px;
         border-bottom: 1px solid var(--border-color);
         background: var(--bg-secondary);
         box-sizing: border-box;
         display: flex;
         align-items: center;
         justify-content: space-between;
-        margin: 0 auto;
     }
 
     .cube-icon-container {
@@ -231,8 +234,7 @@ body::-webkit-scrollbar,
     }
 
     .page-title {
-        font-size: 1.0.8rem;
-
+        font-size: 1.08rem;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -279,11 +281,14 @@ body::-webkit-scrollbar,
         gap: 0.125rem;
     }
 
-    .card {
+    .shifts-day-nav .btn.active {
+        height: 29.95px;
+    }
 
+    .card {
         width: 100%;
         flex: none;
-        padding: 10px;
+        padding: 0.125rem;
         box-sizing: border-box;
     }
 
@@ -294,7 +299,9 @@ body::-webkit-scrollbar,
     }
 
     .card-title {
-        font-size: 0.95rem;
+        font-size: 0.75rem;
+        padding: 0 0.5rem;
+        color: var(--text-muted);
     }
 
     /* Dopasowanie wysokości wykresów na telefonach */
@@ -370,7 +377,6 @@ body::-webkit-scrollbar,
         scrollbar-width: none;
         box-sizing: border-box;
         justify-content: space-between;
-
     }
 
     .month-controls::-webkit-scrollbar {
@@ -397,7 +403,7 @@ body::-webkit-scrollbar,
         border: 1px solid var(--border-color);
         background: var(--card-bg);
         box-sizing: border-box;
-        margin-top: 3rem;
+        margin-top: 2.6rem;
     }
 
     .schedule-table {
@@ -422,6 +428,16 @@ body::-webkit-scrollbar,
 
     .schedule-table th small {
         font-size: 8px;
+    }
+
+    .shifts-search-chassis {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        padding: 0 0.5rem;
+        height: 27px;
+        flex: 1 1 30px;
+        background: var(--bg-color);
     }
 
     /* Zoptymalizowana szerokość kolumn przypiętych dla małych ekranów */
@@ -468,10 +484,6 @@ body::-webkit-scrollbar,
         font-size: 13px;
         font-weight: 700;
         height: 100%;
-        width: 100%;
-        text-align: center;
-        padding: 0;
-        margin: 0;
     }
 
     /* ==========================================================================
@@ -489,6 +501,80 @@ body::-webkit-scrollbar,
     .view-container.active {
         display: flex;
         margin-top: 3.5rem;
+    }
+
+    /* Widok Obsady Zmianowej na Mobile */
+    #view-shifts.active {
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+        min-height: calc(100dvh - 120px);
+        margin-top: 3.6rem;
+        padding: 0 8px;
+        box-sizing: border-box;
+    }
+
+    #view-shifts .shifts-control-card {
+        padding: 0.125rem;
+    }
+
+    #view-shifts .shifts-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.125rem;
+    }
+
+    #view-shifts .shifts-title-group {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 0.125rem;
+        padding: 0 0.25rem;
+    }
+
+    #view-shifts .shifts-filter-search-group {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.125rem;
+    }
+
+    #view-shifts .shifts-filter-tabs {
+        width: 100%;
+        display: flex;
+    }
+
+    #view-shifts .shifts-filter-tabs .btn-bg {
+        flex: 1 1 0;
+    }
+
+    #view-shifts .shifts-filter-tabs .btn {
+        width: 100%;
+        padding: 6px 4px;
+        font-size: 11px;
+    }
+
+    #view-shifts .shifts-search-chassis {
+        width: 100%;
+        min-width: 100%;
+    }
+
+    #view-shifts .shifts-columns-container {
+        grid-template-columns: 1fr;
+        height: auto;
+        overflow: visible;
+        gap: 0.125rem;
+    }
+
+    #view-shifts .shift-column-card {
+        height: auto;
+        min-height: 180px;
+    }
+
+    #view-shifts .shifts-columns-container .shift-col-list {
+        max-height: 48vh;
     }
 
     .editor-wrapper {
@@ -566,8 +652,9 @@ body::-webkit-scrollbar,
         overflow: visible;
         white-space: normal;
         display: flex;
-        flex-direction: column;
-        align-items: flex-start;
+        flex-direction: row;
+        align-items: center;
+        justify-content: flex-start;
     }
 
     .extracted-style-34 {
@@ -592,7 +679,7 @@ body::-webkit-scrollbar,
     .modal-day-controls {
         display: flex;
         align-items: center;
-        gap: 3px;
+        gap: 0.125rem;
         flex-shrink: 0;
     }
 
@@ -616,7 +703,7 @@ body::-webkit-scrollbar,
     }
 
     .modal-day-controls .select-trigger .trigger-content {
-        gap: 4px;
+        gap: 0.125rem;
         font-size: 10px;
     }
 
@@ -732,15 +819,15 @@ body::-webkit-scrollbar,
     .cal-stats {
         display: grid;
         grid-template-columns: repeat(3, 1fr);
-        gap: 3px;
+        gap: 0.125rem;
         margin-bottom: 10px;
-        padding: 3px;
+        padding: 0.125rem;
         box-sizing: border-box;
     }
 
     .cal-stat-box {
         padding: 5px 2px;
-        gap: 2px;
+        gap: 0.125rem;
     }
 
     .cal-stat-box span {
@@ -758,8 +845,8 @@ body::-webkit-scrollbar,
 
     .cal-grid {
         grid-template-columns: repeat(7, 1fr);
-        gap: 2px;
-        padding: 2px;
+        gap: 0.125rem;
+        padding: 0.125rem;
         margin-bottom: 12px;
         box-sizing: border-box;
     }
@@ -771,7 +858,7 @@ body::-webkit-scrollbar,
 
     .cal-cell {
         min-height: 44px;
-        padding: 2px;
+        padding: 0.125rem;
     }
 
     .cal-day-num {
@@ -780,9 +867,9 @@ body::-webkit-scrollbar,
 
     .cal-shift {
         font-size: 8px;
-        padding: 1px;
+        padding: 0.125rem;
         letter-spacing: 0;
-        margin-top: 2px;
+        margin-top: 0.125rem;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -798,7 +885,7 @@ body::-webkit-scrollbar,
     .users-modal-header-actions {
         display: flex;
         align-items: center;
-        gap: 6px;
+        gap: 0.125rem;
     }
 
     .btn-sync-users {
@@ -810,22 +897,23 @@ body::-webkit-scrollbar,
     .users-add-form {
         display: flex;
         flex-direction: row;
-        gap: 6px;
+        gap: 0.125rem;
         width: 100%;
     }
 
     .users-add-form .input-chassis {
         width: 100%;
+        height: 33px;
     }
 
     .users-add-form .user-form-input {
         font-size: 14px;
-        height: 36px;
+        height: 27px;
     }
 
     .btn-add-user-action {
-        width: 100%;
-        height: 36px;
+        width: 27px;
+        height: 27px;
     }
 
     .users-list-container {
@@ -840,8 +928,8 @@ body::-webkit-scrollbar,
     }
 
     .user-item-chassis {
-        gap: 6px;
-        padding: 8px;
+        gap: 0.125rem;
+        padding: 0.125rem;
         display: flex;
         flex-direction: column;
         align-items: flex-start;
@@ -850,7 +938,7 @@ body::-webkit-scrollbar,
 
     .user-item-actions {
         display: flex;
-        gap: 4px;
+        gap: 0.125rem;
         margin-left: auto;
     }
 
@@ -954,10 +1042,10 @@ body::-webkit-scrollbar,
     .change-pass-actions,
     .server-actions-row {
         display: flex;
-        flex-direction: column;
-        gap: 8px;
+        flex-direction: row;
+        gap: 0.125rem;
         width: 100%;
-        margin-top: 10px;
+        margin-top: 10px
     }
 
     .change-pass-actions .btn-bg,
