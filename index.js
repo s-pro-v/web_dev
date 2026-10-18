@@ -242,7 +242,109 @@
   // STAN I ZARZĄDZANIE GRAFIKIEM
   // ==========================================
   const STORAGE_KEY = "harmonogram_data";
+  const HISTORY_STORAGE_KEY = "oxy_schedule_history_log";
   const GITHUB_URL = "https://raw.githubusercontent.com/s-pro-v/json-lista/refs/heads/main/mobile-grafik.json";
+
+  let scheduleHistory = [];
+
+  function loadScheduleHistory() {
+    try {
+      const saved = localStorage.getItem(HISTORY_STORAGE_KEY);
+      if (saved) {
+        scheduleHistory = JSON.parse(saved);
+        if (!Array.isArray(scheduleHistory)) scheduleHistory = [];
+      }
+    } catch (e) {
+      scheduleHistory = [];
+    }
+  }
+
+  function saveScheduleHistory() {
+    try {
+      // Ograniczenie do ostatnich 200 wpisów
+      if (scheduleHistory.length > 200) {
+        scheduleHistory = scheduleHistory.slice(0, 200);
+      }
+      localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(scheduleHistory));
+      renderScheduleHistoryUi();
+    } catch (e) { }
+  }
+
+  function addScheduleHistoryEntry(entry) {
+    const newEntry = {
+      id: "hist_" + Date.now() + "_" + Math.random().toString(36).substring(2, 7),
+      timestamp: new Date().toISOString(),
+      user: localStorage.getItem("oxy_username") || "Lokalny użytkownik",
+      ...entry
+    };
+    scheduleHistory.unshift(newEntry);
+    saveScheduleHistory();
+  }
+
+  function computeScheduleDiff(oldMonths, newMonths) {
+    if (!Array.isArray(oldMonths) || !Array.isArray(newMonths)) return [];
+    const diffs = [];
+
+    newMonths.forEach((newM, mIdx) => {
+      const oldM = oldMonths[mIdx];
+      const mName = newM.meta?.month || `Miesiąc ${mIdx + 1}`;
+      const days = newM.meta?.days || [];
+
+      if (!oldM || !oldM.workers) {
+        diffs.push({
+          type: "month_added",
+          month: mName,
+          text: `Dodano nowy miesiąc: ${mName}`
+        });
+        return;
+      }
+
+      const oldWorkersMap = new Map();
+      oldM.workers.forEach(w => {
+        const key = String(w.name || w.id || "").trim().toLowerCase();
+        if (key) oldWorkersMap.set(key, w);
+      });
+
+      newM.workers?.forEach(nw => {
+        const key = String(nw.name || nw.id || "").trim().toLowerCase();
+        const ow = oldWorkersMap.get(key);
+
+        if (!ow) {
+          diffs.push({
+            type: "worker_added",
+            month: mName,
+            worker: nw.name || "ID " + nw.id,
+            text: `Nowy pracownik w grafiku: ${nw.name || nw.id}`
+          });
+          return;
+        }
+
+        // Porównaj zmiany poszczególnych dni
+        const maxLen = Math.max(nw.shifts?.length || 0, ow.shifts?.length || 0);
+        for (let d = 0; d < maxLen; d++) {
+          const oldRaw = ow.shifts ? (ow.shifts[d] || "") : "";
+          const newRaw = nw.shifts ? (nw.shifts[d] || "") : "";
+          const oldCode = getDisplayShiftCode(oldRaw);
+          const newCode = getDisplayShiftCode(newRaw);
+
+          if (oldCode !== newCode) {
+            const dayLabel = days[d] ? `dzień ${days[d]}` : `kolumna ${d + 1}`;
+            diffs.push({
+              type: "shift_changed",
+              month: mName,
+              worker: nw.name || "ID " + nw.id,
+              day: dayLabel,
+              dayIdx: d,
+              oldVal: oldCode || "wolne",
+              newVal: newCode || "wolne"
+            });
+          }
+        }
+      });
+    });
+
+    return diffs;
+  }
 
   const groupMetadata = {
     d: { colorLight: "#d35400", colorDark: "#cc8a28", name: "D" },
@@ -332,7 +434,22 @@
     if (tab === "schedule") renderSchedule();
     if (tab === "dashboard") syncDashboardCharts();
     if (tab === "shifts") {
-      if (typeof dayIdx === "number") activeShiftDayIdx = dayIdx;
+      // Zapewnienie, że aktywny miesiąc odpowiada bieżącemu miesiącowi
+      if (typeof dayIdx !== "number") {
+        const curMIdx = findCurrentMonthIndex();
+        if (curMIdx !== -1) appState.activeMonthIdx = curMIdx;
+      }
+
+      if (typeof dayIdx === "number") {
+        activeShiftDayIdx = dayIdx;
+      } else {
+        // Domyślnie ładuj po dzisiejszym dniu
+        const daysArr = appState.allMonths[appState.activeMonthIdx]?.meta?.days || [];
+        const todayStr = String(new Date().getDate());
+        const tIdx = daysArr.indexOf(todayStr);
+        activeShiftDayIdx = tIdx !== -1 ? tIdx : 0;
+      }
+
       if (filter) setShiftFilter(filter);
       renderShiftsView();
     }
@@ -481,11 +598,40 @@
       input.addEventListener("change", (e) => {
         const w = parseInt(e.target.dataset.w, 10);
         const s = parseInt(e.target.dataset.s, 10);
+        const workerObj = appState.allMonths[appState.activeMonthIdx]?.workers[w];
+        const oldShift = workerObj?.shifts ? (workerObj.shifts[s] || "") : "";
+        const oldCode = getDisplayShiftCode(oldShift);
+        const newCode = getDisplayShiftCode(e.target.value);
 
         if (!appState.allMonths[appState.activeMonthIdx].workers[w].shifts) {
           appState.allMonths[appState.activeMonthIdx].workers[w].shifts = [];
         }
         appState.allMonths[appState.activeMonthIdx].workers[w].shifts[s] = e.target.value;
+
+        // Rejestracja w historii zmian
+        if (oldCode !== newCode) {
+          const currentMeta = appState.allMonths[appState.activeMonthIdx]?.meta;
+          const dayNum = currentMeta?.days ? currentMeta.days[s] : String(s + 1);
+          const dayWd = currentMeta?.weekdays ? currentMeta.weekdays[s] : "";
+          const monthName = currentMeta?.month || "Bieżący miesiąc";
+
+          addScheduleHistoryEntry({
+            source: "manual",
+            title: `Ręczna zmiana w grafiku (${monthName})`,
+            month: monthName,
+            diffs: [
+              {
+                type: "shift_changed",
+                month: monthName,
+                worker: workerObj?.name || `Pracownik #${w + 1}`,
+                day: `${dayNum} ${dayWd}`.trim(),
+                dayIdx: s,
+                oldVal: oldCode || "wolne",
+                newVal: newCode || "wolne"
+              }
+            ]
+          });
+        }
 
         appState.content = JSON.stringify(appState.allMonths, null, 2);
         localStorage.setItem(STORAGE_KEY, appState.content);
@@ -2267,6 +2413,175 @@
   }
 
   // ==========================================
+  // MODAL I WIDOK HISTORII ZMIAN (DIFF & LOG)
+  // ==========================================
+  let activeHistoryFilter = "all";
+
+  function renderScheduleHistoryUi() {
+    const listEl = document.getElementById("history-log-list");
+    const statManual = document.getElementById("history-stat-manual");
+    const statCloud = document.getElementById("history-stat-cloud");
+    const statTotal = document.getElementById("history-stat-total");
+
+    if (!listEl) return;
+
+    let manualCount = 0;
+    let cloudCount = 0;
+    scheduleHistory.forEach(item => {
+      if (item.source === "cloud") cloudCount++;
+      else manualCount++;
+    });
+
+    if (statManual) statManual.textContent = String(manualCount);
+    if (statCloud) statCloud.textContent = String(cloudCount);
+    if (statTotal) statTotal.textContent = String(scheduleHistory.length);
+
+    const filtered = scheduleHistory.filter(item => {
+      if (activeHistoryFilter === "all") return true;
+      if (activeHistoryFilter === "cloud") return item.source === "cloud";
+      if (activeHistoryFilter === "manual") return item.source === "manual";
+      return true;
+    });
+
+    if (filtered.length === 0) {
+      listEl.innerHTML = `
+        <div class="history-empty-state">
+          <i class="fas fa-clock-rotate-left"></i>
+          <div>Brak zarejestrowanych zmian w tej kategorii.</div>
+        </div>
+      `;
+      return;
+    }
+
+    listEl.innerHTML = filtered.map(item => {
+      const isCloud = item.source === "cloud";
+      const dateObj = new Date(item.timestamp);
+      const timeStr = !isNaN(dateObj.getTime())
+        ? `${dateObj.toLocaleDateString("pl-PL")} ${dateObj.toLocaleTimeString("pl-PL")}`
+        : item.timestamp;
+
+      let diffHtml = "";
+      if (Array.isArray(item.diffs) && item.diffs.length > 0) {
+        diffHtml = `
+          <div class="history-diff-list">
+            ${item.diffs.map(d => {
+              if (d.type === "shift_changed") {
+                return `
+                  <div class="history-diff-row">
+                    <span class="history-diff-worker">${d.worker}</span>
+                    <span class="history-diff-day">[${d.day || ""}]</span>
+                    <span class="history-diff-change">
+                      <span class="diff-old-val">${d.oldVal}</span>
+                      <span class="diff-arrow"><i class="fas fa-arrow-right"></i></span>
+                      <span class="diff-new-val">${d.newVal}</span>
+                    </span>
+                  </div>
+                `;
+              }
+              return `
+                <div class="history-diff-row">
+                  <span class="history-diff-worker">${d.text || d.type}</span>
+                </div>
+              `;
+            }).join("")}
+          </div>
+        `;
+      } else if (item.summary) {
+        diffHtml = `<div class="history-diff-list"><div class="history-diff-row">${item.summary}</div></div>`;
+      }
+
+      return `
+        <div class="history-item-card type-${item.source || "manual"}">
+          <div class="history-item-top">
+            <span class="history-badge ${isCloud ? "badge-cloud" : "badge-manual"}">
+              <i class="fas ${isCloud ? "fa-cloud-arrow-down" : "fa-user-pen"}"></i>
+              ${isCloud ? "Synchronizacja Chmury" : "Edycja Lokalna"}
+            </span>
+            <span class="history-item-time"><i class="fas fa-clock"></i> ${timeStr}</span>
+          </div>
+          <div class="history-item-title">
+            <span>${item.title || "Zmiana w grafiku"}</span>
+            <small style="color: var(--text-muted); font-size: 0.72rem; margin-left: auto;">${item.user || ""}</small>
+          </div>
+          ${diffHtml}
+        </div>
+      `;
+    }).join("");
+  }
+
+  function initScheduleHistoryModal() {
+    loadScheduleHistory();
+
+    const modal = document.getElementById("history-modal-overlay");
+    const btnOpen = document.getElementById("btn-history");
+    const btnClose = document.getElementById("history-modal-close");
+    const btnClear = document.getElementById("btn-clear-history");
+
+    const tabAll = document.getElementById("history-filter-all");
+    const tabCloud = document.getElementById("history-filter-cloud");
+    const tabManual = document.getElementById("history-filter-manual");
+
+    if (btnOpen && modal) {
+      btnOpen.addEventListener("click", () => {
+        audio.playClick("switch");
+        renderScheduleHistoryUi();
+        modal.classList.add("active");
+      });
+    }
+
+    const fileUpdateCard = document.getElementById("file-update-card");
+    if (fileUpdateCard && modal) {
+      fileUpdateCard.style.cursor = "pointer";
+      fileUpdateCard.title = "Kliknij, aby otworzyć historię zmian i diff grafiku";
+      fileUpdateCard.addEventListener("click", (e) => {
+        if (e.target.closest("button, a")) return;
+        audio.playClick("switch");
+        renderScheduleHistoryUi();
+        modal.classList.add("active");
+      });
+    }
+
+    if (btnClose && modal) {
+      btnClose.addEventListener("click", () => {
+        audio.playClick("normal");
+        modal.classList.remove("active");
+      });
+    }
+
+    if (modal) {
+      modal.addEventListener("click", (e) => {
+        if (e.target === modal) modal.classList.remove("active");
+      });
+    }
+
+    if (btnClear) {
+      btnClear.addEventListener("click", () => {
+        if (scheduleHistory.length === 0) {
+          oxyAlert("Historia zmian jest już pusta.", "info", "HISTORIA");
+          return;
+        }
+        oxyConfirm("Czy na pewno chcesz wyczyścić cały lokalny rejestr historii zmian grafiku?", () => {
+          scheduleHistory = [];
+          localStorage.removeItem(HISTORY_STORAGE_KEY);
+          renderScheduleHistoryUi();
+          oxyAlert("Historia zmian grafiku została wyczyszczona.", "info", "WYCZYSZCZONO");
+        });
+      });
+    }
+
+    const setTab = (filter, activeBtn) => {
+      activeHistoryFilter = filter;
+      [tabAll, tabCloud, tabManual].forEach(b => b?.classList.remove("active"));
+      activeBtn?.classList.add("active");
+      renderScheduleHistoryUi();
+    };
+
+    if (tabAll) tabAll.addEventListener("click", () => { audio.playClick("switch"); setTab("all", tabAll); });
+    if (tabCloud) tabCloud.addEventListener("click", () => { audio.playClick("switch"); setTab("cloud", tabCloud); });
+    if (tabManual) tabManual.addEventListener("click", () => { audio.playClick("switch"); setTab("manual", tabManual); });
+  }
+
+  // ==========================================
   // INICJALIZACJA STARTOWA (BOOT APPLICATION)
   // ==========================================
   function bootApplication() {
@@ -2301,6 +2616,7 @@
     initShiftsView();
     createWorkerCalendarModal();
     initServerConfigModal();
+    initScheduleHistoryModal();
     loadData();
     initTabsAndEditor();
     initCharts();
@@ -2345,6 +2661,11 @@
           const res = await fetch(GITHUB_URL, { cache: "no-store" });
           if (!res.ok) throw new Error("Błąd pobierania");
           const data = await res.json();
+
+          // Obliczenie różnic (diff) pomiędzy obecną wersją a wersją z chmury
+          const prevMonths = appState.allMonths;
+          const diffs = computeScheduleDiff(prevMonths, data);
+
           appState.allMonths = data;
           appState.content = JSON.stringify(data, null, 2);
           localStorage.setItem(STORAGE_KEY, appState.content);
@@ -2356,6 +2677,24 @@
           localStorage.setItem(STORAGE_SEEN_FILE_UPDATE, currentGen);
           cachedGitHubCommit = null;
 
+          // Zapis do historii zmian
+          const monthName = data[appState.activeMonthIdx]?.meta?.month || "Bieżący miesiąc";
+          if (diffs.length > 0) {
+            addScheduleHistoryEntry({
+              source: "cloud",
+              title: `Pobrano aktualizację z GitHub (${diffs.length} zmian)`,
+              month: monthName,
+              diffs: diffs
+            });
+          } else {
+            addScheduleHistoryEntry({
+              source: "cloud",
+              title: `Synchronizacja z GitHub (brak zmian grafiku)`,
+              month: monthName,
+              summary: "Plik grafiku został pobrany, wersja jest w 100% zgodna z chmurą."
+            });
+          }
+
           const editorEl = document.getElementById("json-editor");
           if (editorEl) editorEl.value = appState.content;
 
@@ -2366,7 +2705,8 @@
             window.syncUsersFromSchedule(true);
           }
 
-          oxyAlert("Pobrano najnowsze dane z chmury. Grafik został zaktualizowany.", "success", "Update");
+          const changesNote = diffs.length > 0 ? ` (wykryto ${diffs.length} zmian w obsadzie)` : ` (brak zmian w stosunku do lokalnej wersji)`;
+          oxyAlert(`Pobrano najnowsze dane z chmury${changesNote}. Grafik został zaktualizowany.`, "success", "Update");
         } catch (e) {
           oxyAlert("Błąd chmury: " + e.message, "error", "BŁĄD");
         } finally {

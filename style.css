@@ -4144,3 +4144,229 @@ textarea#json-editor {
     width: 16px;
     text-align: center;
 }
+
+/* ==========================================================================
+   HISTORIA ZMIAN W GRAFIKU (DIFF & LOG)
+   ========================================================================== */
+.history-modal-content {
+    max-width: 820px;
+    width: 95%;
+}
+
+.history-icon-highlight {
+    color: var(--highlight-color);
+    margin-right: 8px;
+}
+
+.history-modal-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.btn-clear-history {
+    font-size: 0.72rem;
+    padding: 0 10px;
+    height: 28px;
+    width: auto;
+    color: var(--danger-color);
+    border-color: rgba(239, 68, 68, 0.3);
+}
+
+.btn-clear-history:hover {
+    background: rgba(239, 68, 68, 0.15);
+    color: #fff;
+}
+
+.history-modal-body {
+    flex-direction: column !important;
+    gap: 10px;
+    max-height: 75vh;
+}
+
+.history-modal-stats-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    padding: 6px 12px;
+}
+
+.history-stat-badge {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.history-stat-badge strong {
+    color: var(--highlight-color);
+    font-family: "JetBrains Mono", monospace;
+}
+
+.history-filter-tabs {
+    width: 100% !important;
+}
+
+.history-filter-tabs .btn-bg {
+    flex: 1;
+}
+
+.history-filter-tabs .btn {
+    width: 100%;
+    font-size: 0.75rem;
+    height: 30px;
+}
+
+.history-log-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    overflow-y: auto;
+    max-height: 52vh;
+    padding-right: 4px;
+}
+
+.history-empty-state {
+    padding: 2.5rem 1rem;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    background: var(--bg-secondary);
+    border: 1px dashed var(--border-color);
+}
+
+.history-empty-state i {
+    font-size: 2rem;
+    margin-bottom: 8px;
+    opacity: 0.5;
+    display: block;
+}
+
+.history-item-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-left: 3px solid var(--highlight-color);
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    box-shadow: var(--shadow-drop);
+    transition: background var(--transition-speed);
+}
+
+.history-item-card.type-cloud {
+    border-left-color: #3b82f6;
+}
+
+.history-item-card.type-manual {
+    border-left-color: #10b981;
+}
+
+.history-item-card:hover {
+    background: var(--hover-bg);
+}
+
+.history-item-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    padding-bottom: 4px;
+}
+
+.history-badge {
+    padding: 2px 6px;
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.history-badge.badge-cloud {
+    background: rgba(59, 130, 246, 0.2);
+    color: #60a5fa;
+    border: 1px solid rgba(59, 130, 246, 0.4);
+}
+
+.history-badge.badge-manual {
+    background: rgba(16, 185, 129, 0.2);
+    color: #34d399;
+    border: 1px solid rgba(16, 185, 129, 0.4);
+}
+
+.history-item-time {
+    font-family: "JetBrains Mono", monospace;
+}
+
+.history-item-title {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--text-color);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.history-diff-list {
+    margin-top: 4px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    max-height: 220px;
+    overflow-y: auto;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    padding: 6px 8px;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 0.72rem;
+}
+
+.history-diff-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 3px 6px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 2px;
+}
+
+.history-diff-worker {
+    font-weight: 600;
+    color: var(--text-color);
+    flex: 1;
+}
+
+.history-diff-day {
+    color: var(--text-muted);
+    margin: 0 10px;
+}
+
+.history-diff-change {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.diff-old-val {
+    color: #ef4444;
+    text-decoration: line-through;
+    padding: 1px 4px;
+    background: rgba(239, 68, 68, 0.15);
+}
+
+.diff-arrow {
+    color: var(--text-muted);
+}
+
+.diff-new-val {
+    color: #10b981;
+    font-weight: 700;
+    padding: 1px 4px;
+    background: rgba(16, 185, 129, 0.15);
+}

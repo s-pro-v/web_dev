@@ -161,6 +161,59 @@
             </div>
         </div>
     </div>
+    <!-- MODAL HISTORII ZMIAN W GRAFIKU -->
+    <div id="history-modal-overlay" class="shift-modal-overlay">
+        <div class="shift-modal-content history-modal-content">
+            <div class="shift-modal-header">
+                <h3 class="shift-modal-title">
+                    <i class="fas fa-clock-rotate-left history-icon-highlight"></i>
+                    Historia Zmian Grafiku & Diff
+                </h3>
+                <div class="history-modal-header-actions">
+                    <div class="btn-bg">
+                        <button id="btn-clear-history" class="btn btn-clear-history" title="Wyczyść lokalny rejestr historii">
+                            <i class="fas fa-trash-can"></i> Wyczyść
+                        </button>
+                    </div>
+                    <div class="chassis-socket">
+                        <button id="history-modal-close" class="shift-modal-close">&times;</button>
+                    </div>
+                </div>
+            </div>
+            <div class="shift-modal-body history-modal-body">
+                <div class="history-modal-stats-bar">
+                    <div class="history-stat-badge">
+                        <span>Lokalne edycje:</span>
+                        <strong id="history-stat-manual">0</strong>
+                    </div>
+                    <div class="history-stat-badge">
+                        <span>Aktualizacje z chmury:</span>
+                        <strong id="history-stat-cloud">0</strong>
+                    </div>
+                    <div class="history-stat-badge">
+                        <span>Łącznie wpisów:</span>
+                        <strong id="history-stat-total">0</strong>
+                    </div>
+                </div>
+
+                <div class="history-filter-tabs btn-group tab-chassis">
+                    <div class="btn-bg">
+                        <button id="history-filter-all" class="btn active">Wszystkie</button>
+                    </div>
+                    <div class="btn-bg">
+                        <button id="history-filter-cloud" class="btn">Z chmury (Diff)</button>
+                    </div>
+                    <div class="btn-bg">
+                        <button id="history-filter-manual" class="btn">Ręczne edycje</button>
+                    </div>
+                </div>
+
+                <div id="history-log-list" class="history-log-list">
+                    <!-- Dynamiczne wpisy historii -->
+                </div>
+            </div>
+        </div>
+    </div>
     <!-- GŁÓWNY KONTENER APLIKACJI -->
     <div class="dashboard-wrapper locked">
         <div class="main-content">
@@ -207,6 +260,9 @@
                     </button>
                     <button class="icon-btn" id="btn-pwa-install" title="Zainstaluj aplikację">
                         <div class="icon-btn-icon" id="icon-file-download-dest"></div>
+                    </button>
+                    <button class="icon-btn" id="btn-history" title="Historia zmian w grafiku (Diff)">
+                        <div class="icon-btn-icon" id="icon-history-dest"><i class="fas fa-clock-rotate-left"></i></div>
                     </button>
                     <button class="icon-btn" id="btn-users" title="Zarządzaj / przełącz konta">
                         <div class="icon-btn-icon" id="icon-user-dest"><i class="fas fa-user-cog"></i></div>
