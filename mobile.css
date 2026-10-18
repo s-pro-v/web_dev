@@ -7,28 +7,34 @@
    1. REGULACJE DLA TABLETÓW I MNIEJSZYCH EKRANÓW (<= 1024px)
    ========================================================================== */
 
-/* Ukrycie pionowego paska przewijania na urządzeniach mobilnych */
+/* Całkowite ukrycie pasków przewijania w całym module mobilnym */
+*,
+*::before,
+*::after,
 html,
 body,
 .dashboard-wrapper,
 .main-content,
 .view-container,
 .view-dashboard-layout,
-.sidebar {
+.sidebar,
+.schedule-view-content,
+.shifts-columns-container,
+.shift-col-list,
+.shift-modal-body,
+.history-modal-body,
+.history-log-list,
+.users-list-container,
+.month-controls {
     scrollbar-width: none !important;
     /* Firefox */
     -ms-overflow-style: none !important;
     /* IE / stary Edge */
 }
 
-/* Chrome, Safari, WebView na telefonach */
-html::-webkit-scrollbar,
-body::-webkit-scrollbar,
-.dashboard-wrapper::-webkit-scrollbar,
-.main-content::-webkit-scrollbar,
-.view-container::-webkit-scrollbar,
-.view-dashboard-layout::-webkit-scrollbar,
-.sidebar::-webkit-scrollbar {
+/* Chrome, Safari, WebView, PWA na telefonach */
+*::-webkit-scrollbar,
+::-webkit-scrollbar {
     display: none !important;
     width: 0 !important;
     height: 0 !important;

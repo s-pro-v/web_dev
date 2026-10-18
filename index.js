@@ -2608,6 +2608,7 @@
       injectIcon("icon-cloud-download-dest", AppIcons.cloudDownload);
       injectIcon("icon-sun-dest", savedTheme === "light" ? AppIcons.sparkle2 : AppIcons.brightnessIncrease);
       injectIcon("icon-file-download-dest", AppIcons.filedownload);
+      injectIcon("icon-storage-dest", AppIcons.storagedest, '<i class="fas fa-database"></i>');
       injectIcon("icon-user-dest", AppIcons.userdest || AppIcons.userGlass, '<i class="fas fa-user-cog"></i>');
       injectIcon("circle-power-off-dest", AppIcons.circlepoweroffdest || AppIcons.powerGlass, '<i class="fas fa-sign-out-alt logout-icon"></i>');
     }

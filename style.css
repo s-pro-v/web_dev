@@ -8,7 +8,7 @@
     --font-family: "JetBrains Mono", monaco, courier, monospace;
     --font-main: var(--font-family);
     --font-tech: "Share Tech Mono", monospace;
-    --transition-speed: 0.15s;
+    --transition-speed: 0.2s;
     --transition-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
     --transition-ui: background-color var(--transition-speed) var(--transition-ease),
         color var(--transition-speed) var(--transition-ease),
@@ -153,12 +153,12 @@
     --grid-line: rgba(0, 0, 0, 0.08);
     --pattern-color: var(--grid-color);
     /* tactile shadows (light) */
-    --shadow-drop: 0 1px 3px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(0, 0, 0, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.8);
-    --shadow-inset: inset 0 1px 2px rgba(0, 0, 0, 0.08), inset 0 0 0 1px rgba(0, 0, 0, 0.04);
-    --shadow-hover: 0 3px 6px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(0, 0, 0, 0.08);
-    --shadow-active: inset 0 2px 4px rgba(0, 0, 0, 0.15);
+    --shadow-drop: rgba(0, 0, 0, 0.12) 0px 0px 0px 1px, rgba(0, 0, 0, 0.14) 0px 3px 6px -1px, rgba(255, 255, 255, 0.9) 0px 1px 0px inset;
+    --shadow-inset: inset 0px 0px 0px 1px rgba(0, 0, 0, 0.12), inset 0px 3px 6px -1px rgba(0, 0, 0, 0.16), inset 0px 1px 0px rgba(255, 255, 255, 0.7);
+    --shadow-hover: rgba(0, 0, 0, 0.16) 0px 0px 0px 1px, rgba(0, 0, 0, 0.18) 0px 4px 8px -1px, rgba(255, 255, 255, 0.95) 0px 1px 0px inset;
+    --shadow-active: inset 0px 2px 4px rgba(0, 0, 0, 0.22), inset 0px 0px 0px 1px rgba(0, 0, 0, 0.18);
     --shadow-button: var(--shadow-drop);
-    --shadow-float: 0 4px 12px rgba(0, 0, 0, 0.08);
+    --shadow-float: 0 4px 12px rgba(0, 0, 0, 0.1);
     --filter-icon: invert(0.15);
     /*  */
     --metal-gradient: linear-gradient(165deg, var(--bg-primary) 0%, var(--panel-bg) 50%, var(--bg-tertiary) 100%);
@@ -238,30 +238,22 @@ textarea {
     outline: none;
 }
 
-/* Zero rounded corners policy */
+/* Zero rounded corners policy & global scrollbar hiding */
 *,
 *::before,
 *::after {
     border-radius: 0 !important;
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
 }
 
-/* Scrollbar Style */
+/* Global scrollbar hide for Chrome, Safari, Edge, Opera */
+*::-webkit-scrollbar,
 ::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
-}
-
-::-webkit-scrollbar-track {
-    background: var(--bg-color);
-}
-
-::-webkit-scrollbar-thumb {
-    background: var(--border-color);
-    border: 1px solid var(--bg-color);
-}
-
-::-webkit-scrollbar-thumb:hover {
-    background: var(--highlight-color);
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+    background: transparent !important;
 }
 
 /* Monaco Editor Overrides */
@@ -1330,13 +1322,9 @@ textarea {
     padding: 0.5rem;
     transition: background-color var(--transition-speed);
     cursor: pointer;
-    background: var(--bg-tertiary);
-    border: 1px solid var(--border-color);
 }
 
-.transaction-item:hover {
-    background-color: var(--hover-bg);
-}
+
 
 .transaction-left {
     display: flex;
@@ -3120,11 +3108,7 @@ textarea#json-editor {
     flex-direction: column;
     width: 100%;
     overflow-y: auto;
-    scrollbar-width: thin;
-}
-
-.login-quick-list::-webkit-scrollbar {
-    width: 4px;
+    scrollbar-width: none !important;
 }
 
 .saved-profiles-list {
@@ -3807,7 +3791,6 @@ textarea#json-editor {
     display: flex;
     align-items: center;
     gap: 10px;
-    border-bottom: 1px solid var(--border-subtle);
 }
 
 .extracted-style-38 {
@@ -4167,15 +4150,15 @@ textarea#json-editor {
 .btn-clear-history {
     font-size: 0.72rem;
     padding: 0 10px;
-    height: 28px;
+    /* height: 28px; */
     width: auto;
-    color: var(--danger-color);
-    border-color: rgba(239, 68, 68, 0.3);
+    color: var(--text-muted);
+    border-color: var(--border-color);
 }
 
 .btn-clear-history:hover {
-    background: rgba(239, 68, 68, 0.15);
-    color: #fff;
+    background: var(--hover-bg);
+    color: var(--danger-color);
 }
 
 .history-modal-body {
@@ -4369,4 +4352,4 @@ textarea#json-editor {
     font-weight: 700;
     padding: 1px 4px;
     background: rgba(16, 185, 129, 0.15);
-}
+}
