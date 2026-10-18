@@ -1,4 +1,4 @@
-const CACHE_NAME = "oxy-os-cache-v22";
+const CACHE_NAME = "oxy-os-cache-v23";
 
 const PRECACHE_ASSETS = [
     "./",
@@ -7,6 +7,7 @@ const PRECACHE_ASSETS = [
     "./mobile.css",
     "./index.js",
     "./icons.js",
+    "./manifest.json",
     "./manifest.webmanifest",
     "https://raw.githubusercontent.com/s-pro-v/img/refs/heads/main/G%20img/ico.png",
     "https://cdn.jsdelivr.net/npm/chart.js",

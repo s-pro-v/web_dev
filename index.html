@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>OXY_OS // Workspace & Schedule Dashboard</title>
-    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#1a1a1a">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -502,6 +502,15 @@
 
     <script src="icons.js"></script>
     <script src="index.js"></script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then((reg) => console.log('[OXY_OS] ServiceWorker zarejestrowany:', reg.scope))
+                    .catch((err) => console.warn('[OXY_OS] Błąd rejestracji ServiceWorker:', err));
+            });
+        }
+    </script>
 </body>
 
 </html>

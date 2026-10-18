@@ -2748,8 +2748,7 @@
         window.matchMedia('(display-mode: fullscreen)').matches ||
         window.matchMedia('(display-mode: minimal-ui)').matches ||
         window.navigator.standalone === true ||
-        document.referrer.includes('android-app://') ||
-        localStorage.getItem("oxy_pwa_installed") === "true";
+        document.referrer.includes('android-app://');
     }
 
     if (pwaBtn) {
@@ -2762,13 +2761,12 @@
           deferredInstallPrompt.prompt();
           const { outcome } = await deferredInstallPrompt.userChoice;
           if (outcome === "accepted") {
-            localStorage.setItem("oxy_pwa_installed", "true");
             pwaBtn.style.display = "none";
-            oxyAlert("Aplikacja OXY_OS została pomyślnie zainstalowana.", "success", "PWA");
+            oxyAlert("Aplikacja OXY_OS została zainstalowana.", "success", "PWA");
           }
           deferredInstallPrompt = null;
         } else {
-          oxyAlert("Aplikacja OXY_OS jest gotowa w przeglądarce.", "info", "PWA");
+          oxyAlert("Aby zainstalować: kliknij menu przeglądarki (⋮ lub Udostępnij) i wybierz 'Zainstaluj aplikację' lub 'Dodaj do ekranu głównego'.", "info", "Instalacja PWA");
         }
       });
     }
