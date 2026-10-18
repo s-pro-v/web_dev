@@ -43,21 +43,20 @@ body,
 
 @media (max-width: 1024px) {
 
-    /* Blokada okna głównego i przypisanie scrolla do wnętrza kontenera, co uniemożliwia silnikowi Android/iOS wyświetlenie systemowego paska przewijania */
+    /* Reset i elastyczny viewport z pełnym wsparciem przewijania dotykowego bez blokowania layoutu */
     html,
     body {
         width: 100vw;
         max-width: 100vw;
-        height: 100% !important;
-        height: 100dvh !important;
+        min-height: 100%;
         margin: 0;
         padding: 0;
-        overflow: hidden !important;
-        position: fixed;
-        inset: 0;
+        overflow-x: hidden !important;
+        overflow-y: auto !important;
         -webkit-overflow-scrolling: touch;
         touch-action: pan-y;
-        overscroll-behavior: none;
+        overscroll-behavior-y: auto;
+        overscroll-behavior-x: none;
         -webkit-tap-highlight-color: transparent;
         display: block;
         background-attachment: fixed;
@@ -67,8 +66,9 @@ body,
     .dashboard-wrapper {
         width: 100%;
         max-width: 100vw;
-        height: 100% !important;
-        height: 100dvh !important;
+        height: auto !important;
+        min-height: 100vh;
+        min-height: 100dvh;
         margin: 0;
         padding: 0;
         border: none;
@@ -76,23 +76,10 @@ body,
         display: flex;
         flex-direction: column;
         overflow-x: hidden !important;
-        overflow-y: auto !important;
-        -webkit-overflow-scrolling: touch;
-        touch-action: pan-y;
-        overscroll-behavior-y: auto;
-        overscroll-behavior-x: none;
-        scrollbar-width: none !important;
-        -ms-overflow-style: none !important;
+        overflow-y: visible !important;
         /* Bezpieczny odstęp pod dolną nawigację + Safe Area */
         padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px));
         box-sizing: border-box;
-    }
-
-    .dashboard-wrapper::-webkit-scrollbar {
-        display: none !important;
-        width: 0 !important;
-        height: 0 !important;
-        background: transparent !important;
     }
 
     .main-content {
@@ -282,8 +269,6 @@ body,
     }
 
     .user-controls {
-        gap: 2px;
-        padding: 0;
         box-shadow: none;
         flex-shrink: 0;
         display: flex;
@@ -1170,7 +1155,10 @@ body,
 /* ==========================================================================
    10. SPECYFICZNE DLA ZAINSTALOWANEJ APLIKACJI PWA (STANDALONE / FULLSCREEN)
    ========================================================================== */
-@media all and (display-mode: standalone), (display-mode: fullscreen), (display-mode: minimal-ui) {
+@media all and (display-mode: standalone),
+(display-mode: fullscreen),
+(display-mode: minimal-ui) {
+
     html,
     body,
     *,
@@ -1192,33 +1180,22 @@ body,
     body {
         width: 100vw !important;
         max-width: 100vw !important;
-        height: 100% !important;
-        height: 100dvh !important;
-        overflow: hidden !important;
-        position: fixed !important;
-        inset: 0 !important;
-        overscroll-behavior: none !important;
+        overflow-x: hidden !important;
+        overscroll-behavior-y: none !important;
+        overscroll-behavior-x: none !important;
         -webkit-overflow-scrolling: touch !important;
     }
 
     .dashboard-wrapper {
         width: 100vw !important;
         max-width: 100vw !important;
-        height: 100% !important;
-        height: 100dvh !important;
         overflow-x: hidden !important;
-        overflow-y: auto !important;
-        -webkit-overflow-scrolling: touch !important;
-        scrollbar-width: none !important;
-        -ms-overflow-style: none !important;
+        overflow-y: visible !important;
+        height: auto !important;
+        min-height: 100vh !important;
+        min-height: 100dvh !important;
         padding-top: env(safe-area-inset-top, 0px) !important;
         padding-bottom: calc(58px + env(safe-area-inset-bottom, 0px)) !important;
-    }
-
-    .dashboard-wrapper::-webkit-scrollbar {
-        display: none !important;
-        width: 0 !important;
-        height: 0 !important;
     }
 
     .dashboard-header {
